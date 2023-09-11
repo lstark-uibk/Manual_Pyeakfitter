@@ -47,9 +47,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
 
-        self.filename = r"C:\Users\peaq\Desktop\manualPeakFitter\_result.hdf5"
-        self.savefilename =   r"C:\Users\peaq\Desktop\manualPeakFitter"
+        # self.filename = r"C:\Users\peaq\Desktop\manualPeakFitter\_result.hdf5"
+        # self.savefilename =   r"C:\Users\peaq\Desktop\manualPeakFitter"
+        self.init_Ui_file_not_loaded()
+        self.file_loaded = False
 
+        # self.init_basket_objects()
+
+        # self.init_plots()
+
+    def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
         self.sp = mf.Spectrum(self.filename)
         self.mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
@@ -71,12 +78,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.spectrum_min_plot = []
         self.subspec_plot = []
 
-        self.init_Ui()
-        self.init_plots()
 
-
-
-    def init_Ui(self):
+    def init_Ui_file_not_loaded(self):
         self.centralwidget = QtWidgets.QWidget(self)
         # main layout setup
         self.overallverticallayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -97,26 +100,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.slider = QtWidgets.QSlider(Qt.Horizontal)
         self.slider.setFocusPolicy(Qt.StrongFocus)
-        self.slider.setMinimum(0)
-        self.slider.setMaximum(self.sp.sum_specs.shape[0]-1)
-        self.slider.setTickPosition(QtWidgets.QSlider.TicksBothSides)
-        self.slider.setTickInterval(1)
-        self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
-        self.slider.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
         self.verticalLayout2.addWidget(self.slider)
 
         # other widgets for the verticalLayout1
         self.button = QtWidgets.QPushButton("Print Masslist")
-        self.button.clicked.connect(lambda: print(self.ml.masslist.masses))
 
-        save_button = QtWidgets.QPushButton("Save Masslist to .csv")
-        save_button.clicked.connect(self.save_masslist_to_csv)
+        self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
+
 
         # list of masses
         self.masslist_widget = QtWidgets.QListWidget(self)
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
-        # this functions redraws the qlist with the current masses in the masslist
-        self.ml.redo_qlist(self.masslist_widget)
 
         self.label_jump_mass = QtWidgets.QLabel("Jump to mass: ")
         self.jump_to_mass_input = QtWidgets.QLineEdit()
@@ -128,26 +122,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # create menu
         menubar = QtWidgets.QMenuBar()
-        actionFile = menubar.addMenu("File")
+        self.actionFile = menubar.addMenu("File")
         openfile = QtWidgets.QAction("Open", self)
         openfile.setShortcut("Ctrl+O")
         openfile.triggered.connect(lambda: po.open_file(self))
-        actionFile.addAction(openfile)
-        savecsv = QtWidgets.QAction("Save Masslist to .cvs", self)
-        savecsv.setShortcut("Ctrl+Shift+S")
-        savecsv.triggered.connect(self.save_masslist_to_csv)
-        actionFile.addAction(savecsv)
+        self.actionFile.addAction(openfile)
+        self.savecsv = QtWidgets.QAction("Save Masslist to .cvs", self)
+        self.savecsv.setShortcut("Ctrl+Shift+S")
+        self.actionFile.addAction(self.savecsv)
 
-        actionFile.addSeparator()
+
+        self.changemassranges = QtWidgets.QAction("Change Element ranges", self)
+        self.actionFile.addAction(self.changemassranges)
+
+
+        self.actionFile.addSeparator()
         quit = QtWidgets.QAction("Quit", self)
         quit.setShortcut("Alt+F5")
         quit.triggered.connect(lambda: sys.exit(0))
-        actionFile.addAction(quit)
-
-        changemassrangesWindow = po.SelectMassRangeWindow(self)
-        changemassranges = QtWidgets.QAction("Change Element ranges", self)
-        changemassranges.triggered.connect(changemassrangesWindow.show)
-        actionFile.addAction(changemassranges)
+        self.actionFile.addAction(quit)
 
         settingswindow = po.SettingsWindow(self)
         settings = QtWidgets.QAction("Settings", self)
@@ -164,10 +157,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.overallverticallayout.addLayout(self.horizontalLayout)
         self.verticalLayout1.addWidget(self.masslist_widget)
         self.verticalLayout1.addWidget(self.button)
-        self.verticalLayout1.addWidget(save_button)
+        self.verticalLayout1.addWidget(self.save_button)
 
 
         self.setCentralWidget(self.centralwidget)
+
+    def init_UI_file_loaded(self):
+        #add functionality to:
+        #slider
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(self.sp.sum_specs.shape[0]-1)
+        self.slider.setTickPosition(QtWidgets.QSlider.TicksBothSides)
+        self.slider.setTickInterval(1)
+        self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
+        self.slider.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
+        # print masslist button
+        self.button.clicked.connect(lambda: print(*self.ml.masslist.masses, sep="\n"))
+        # save masslist button
+        self.save_button.clicked.connect(self.save_masslist_to_csv)
+        # masslist shown on left
+        self.ml.redo_qlist(self.masslist_widget)
+        # change range action in menubar
+        changemassrangesWindow = po.SelectMassRangeWindow(self)
+        self.changemassranges.triggered.connect(changemassrangesWindow.show)
+
+        # save to csv in menubar
+        self.savecsv.triggered.connect(self.save_masslist_to_csv)
+
+
 
     def init_plots(self):
         # Enable antialiasing for prettier plots

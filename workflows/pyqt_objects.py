@@ -1,6 +1,6 @@
 import PyQt5.QtGui as QtGui
 import PyQt5.QtWidgets as QtWidgets
-import workflows.pyqtgraph_objects
+import workflows.pyqtgraph_objects as pyqtgraph_objects
 from PyQt5.QtCore import Qt
 
 #menu functions
@@ -9,8 +9,11 @@ def open_file(parent):
     dialog = QtWidgets.QFileDialog()
     filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
     parent.filename = filepath
-    parent.init_Ui()
+
+    parent.init_basket_objects()
+    parent.init_UI_file_loaded()
     parent.init_plots()
+    parent.file_loaded = True
 
 class QHSeparationLine(QtWidgets.QFrame):
   '''
@@ -167,13 +170,14 @@ class SettingsWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
 
     def onClick(self, index):
-        checkbox = self.sender()
-        if checkbox.isChecked():
-            for i in index:
-                self.parent.plot_settings["show_plots"][i] = True
-        if not checkbox.isChecked():
-            for i in index:
-                self.parent.plot_settings["show_plots"][i] = False
-        # print(self.parent.plot_settings["show_plots"])
-        pyqtgraph_objects.replot_spectra(self.parent,self.parent.plot_settings["show_plots"])
+        if self.parent.file_loaded:
+            checkbox = self.sender()
+            if checkbox.isChecked():
+                for i in index:
+                    self.parent.plot_settings["show_plots"][i] = True
+            if not checkbox.isChecked():
+                for i in index:
+                    self.parent.plot_settings["show_plots"][i] = False
+            # print(self.parent.plot_settings["show_plots"])
+            pyqtgraph_objects.replot_spectra(self.parent,self.parent.plot_settings["show_plots"])
 

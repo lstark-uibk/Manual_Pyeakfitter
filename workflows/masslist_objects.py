@@ -2,7 +2,7 @@ import numpy as np
 import math
 import h5py
 import itertools
-import workflows.pyqtgraph_objects
+import workflows.pyqtgraph_objects as pyqtgraph_objects
 import timeit
 
 def load_masslist(Filename):
