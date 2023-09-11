@@ -14,6 +14,12 @@ Latest running versions:
 - h5py   3.9.0 
 - pyqtgraph 0.13.1
 
+## Installation
+On Pycharm with Git installed, add this project by Git -> Clone... -> Repository URL.
+Insert the url: https://github.com/lstark-uibk/Manual_Pyeakfitter and select the directory you want to save it in.
+
+Without PyCharm just download the repository and run it with your favourite Python interpreter.
+
 To install the packages run in your anaconda prompt or python command line:
 ```
 pip install pyqt5 pyqtgraph pandas numpy h5py
