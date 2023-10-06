@@ -149,8 +149,8 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             print("try to delete mass", self.value())
             if self.value() in self.parent.ml.masslist.masses :
                 self.parent.ml.delete_mass_from_masslist(self.value(),self.parent)
-                self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_default"])
-                self.pen = self.penmasslist
+                # self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_default"])
+                self.pen = fn.mkPen(0.5)
                 redraw_localfit(self.parent,self.xlims)
                 self.update()
         if ev.button() == QtCore.Qt.MouseButton.RightButton:

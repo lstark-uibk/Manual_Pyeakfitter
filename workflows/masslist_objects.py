@@ -94,7 +94,7 @@ class Data():
 
 class Masslist():
     names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
-    order_of_letters = [0, 1, 2, 4, 5, 6, 7, 3]
+    order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
     masses_elements = np.array([12,
                                 13.00335,
                                 1.00783,
@@ -139,6 +139,7 @@ class Masslist():
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, [[[np.nan]*8]*2]])
                 print("add mass ", mass, "to masslist")
 
+
             sortperm = np.argsort(self.masslist.masses)
             self.masslist.masses = self.masslist.masses[sortperm]
             self.masslist.element_numbers = self.masslist.element_numbers[sortperm]
@@ -146,7 +147,11 @@ class Masslist():
             self.isotopes.isotopic_abundance = self.isotopes.isotopic_abundance[sortperm]
             self.isotopes.element_numbers = self.isotopes.element_numbers[sortperm]
 
-            xlims, ylims = parent.spectrumplot.getViewBox().viewRange()
+            #delete in suggetions -> Problem danach ist es ganz weg
+            index_of_deletion = np.where(self.suggestions.masses == mass)
+            self.suggestions.masses = np.delete(self.suggestions.masses, index_of_deletion)
+            self.suggestions.element_numbers = np.delete(self.suggestions.element_numbers, index_of_deletion, axis = 0)
+
             pyqtgraph_objects.redraw_vlines(parent)
             self.redo_qlist(parent.masslist_widget)
 
@@ -154,6 +159,12 @@ class Masslist():
         if mass in self.masslist.masses:
             #delete in masses
             index_of_deletion = np.where(self.masslist.masses == mass)
+
+            #first append it to suggestions only if we have a compound formual attached to it
+            if np.any(self.masslist.element_numbers[index_of_deletion]):
+                self.suggestions.masses = np.append(self.suggestions.masses, mass)
+                self.suggestions.element_numbers = np.append(self.suggestions.element_numbers, self.masslist.element_numbers[index_of_deletion], axis=0)
+
             print("delete mass ", mass, ",", get_names_out_of_element_numbers(self.masslist.element_numbers[index_of_deletion].flatten()) ,"from masslist")
             self.masslist.masses = np.delete(self.masslist.masses, index_of_deletion)
             self.masslist.element_numbers = np.delete(self.masslist.element_numbers, index_of_deletion, axis = 0)
@@ -161,7 +172,7 @@ class Masslist():
             self.isotopes.isotopic_abundance = np.delete(self.isotopes.isotopic_abundance,index_of_deletion,axis = 0)
             self.isotopes.element_numbers = np.delete(self.isotopes.element_numbers,index_of_deletion,axis = 0)
 
-            xlims, ylims = parent.spectrumplot.getViewBox().viewRange()
+
             pyqtgraph_objects.redraw_vlines(parent)
 
     def redo_qlist(self,qlist):
@@ -262,17 +273,23 @@ class Spectrum():
 
 
 def get_names_out_of_element_numbers(compound_array):
-    order_of_letters = Masslist.order_of_letters
-    names_elements = Masslist.names_elements
-    compoundletters = ""
-    for order in order_of_letters:
-        if compound_array[order] == 0:
-            pass
-        if compound_array[order] == 1:
-            compoundletters += names_elements[order]
-        if compound_array[order] > 1:
-            compoundletters += names_elements[order] + str(round(compound_array[order]))
-    return compoundletters
+    # only if any compounds are in compound array give a string
+    if np.any(compound_array):
+        order_of_letters = Masslist.order_of_letters
+        names_elements = Masslist.names_elements
+        compoundletters = ""
+        for index, order in enumerate(order_of_letters):
+            # before the last letter (H+) add a " "
+            if index == len(order_of_letters)-1:
+                compoundletters += " "
+            if compound_array[order] == 0:
+                pass
+            if compound_array[order] == 1:
+                compoundletters += names_elements[order]
+            if compound_array[order] > 1:
+                compoundletters += names_elements[order] + str(round(compound_array[order]))
 
+        return compoundletters
+    return ""
 
 

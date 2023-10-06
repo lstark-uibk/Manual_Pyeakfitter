@@ -1,10 +1,11 @@
 import numpy as np
+import pandas as pd
 import pyqtgraph as pg
 import os
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets, QtGui
 import sys
-import workflows.masslist_objects as mf
+import workflows.masslist_objects as mo
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.pyqt_objects as po
 
@@ -47,7 +48,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
 
-        # self.filename = r"C:\Users\peaq\Desktop\manualPeakFitter\_result.hdf5"
+        self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
+        self.savefilename = None
         # self.savefilename =   r"C:\Users\peaq\Desktop\manualPeakFitter"
         self.init_Ui_file_not_loaded()
         self.file_loaded = False
@@ -58,10 +60,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
-        self.sp = mf.Spectrum(self.filename)
+        self.sp = mo.Spectrum(self.filename)
         self.mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
         # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
-        self.ml = mf.Masslist(self.mass_suggestions_ranges, self.filename)
+        self.ml = mo.Masslist(self.mass_suggestions_ranges, self.filename)
         self.plot_settings = {"vert_lines_color_default": 0.5,
                               "vert_lines_color_masslist": "r",
                               "vert_lines_color_isotopes": (0,210,0,100), # RGB tubel and last number gives the transparency (from 0 to 255)
@@ -217,6 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # whens scrolling through there comes a point where nothing is shown anymore
         xlims, ylims = viewbox.viewRange()
+        print("xlims changed ", xlims, np.diff(xlims))
 
         if np.diff(xlims) > 1.1:
             pyqtgraph_objects.remove_all_vlines(self)
@@ -225,15 +228,30 @@ class MainWindow(QtWidgets.QMainWindow):
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
             def to_worker():
+                print("because I scrolled I redraw local fit")
                 pyqtgraph_objects.redraw_localfit(self,xlims)
             worker = Worker(to_worker)
             self.threadpool.start(worker)
     def save_masslist_to_csv(self):
-        dialog = QtWidgets.QFileDialog()
-        filepath = dialog.getExistingDirectory(None, "Save .csv")
-        self.savefilename = filepath
-        np.savetxt(os.path.join(self.savefilename,"masslist.csv") , self.ml.masslist.masses, delimiter=",")
-        np.savetxt(os.path.join(self.savefilename, "compounds.csv") , self.ml.masslist.element_numbers, delimiter=",")
+        if self.savefilename == None:
+            defaultsavefilename = os.path.join(self.filename,"masslist.csv")
+            options = QtWidgets.QFileDialog.Options()
+            self.savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                "Save File", defaultsavefilename, "csv_files(*.csv)",
+                                                                options=options)
+
+            print(self.savefilename)
+        head = "# Elements: \nC	C(13)	H	H+	N	O	O(18)	S\n	C					O\n12	13.003355	1.007825	1.007276	14.003074	15.994915	17.99916	31.97207\n\n# Masses: \nC	C(13)	H	H+	N	O	O(18)	S	Mass	Name\n"
+        with open(self.savefilename, "w") as file:
+            file.write(head)
+        element_names = np.empty(self.ml.masslist.masses.size,dtype=object)
+        for index, row in enumerate(self.ml.masslist.element_numbers):
+            element_names[index] = mo.get_names_out_of_element_numbers(row)
+        # problem strings und numbers -> pandas
+        data = pd.DataFrame(np.c_[self.ml.masslist.element_numbers, self.ml.masslist.masses])
+        data.insert(9,"names",element_names)
+        data.to_csv(self.savefilename, mode='a', sep='\t', index=False, header=False)
+
         print("Saved Masslist to", self.savefilename)
 
     def jump_to_mass(self, event):
@@ -262,10 +280,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_D:
             xlims, ylims = self.vb.viewRange()
-            self.vb.setXRange(xlims[0] +1 , xlims[1] + 1)
+            self.vb.setXRange(xlims[0] +1 , xlims[1] + 1, padding = 0)
         if event.key() == Qt.Key_A:
             xlims, ylims = self.vb.viewRange()
-            self.vb.setXRange(xlims[0] - 1, xlims[1] - 1)
+            self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
             print(self.ml.currently_hovered)
             self.ml.currently_hovered.delete_vline()
