@@ -4,7 +4,7 @@ from pyqtgraph.Qt import QtCore
 import workflows.masslist_objects as mf
 import numpy as np
 
-def redraw_vline(parent, xlims, massisosugg, color, hover = True, movable = False, deletable = False):
+def redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movable = False, deletable = False):
     new_xlim_current_masses = massisosugg.masses[
         (massisosugg.masses > xlims[0]) & (massisosugg.masses < xlims[1])]
     # first remove lines which are not in the view field anymore
@@ -19,7 +19,7 @@ def redraw_vline(parent, xlims, massisosugg, color, hover = True, movable = Fals
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
-            sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=color, hover = hover, movable= movable,
+            sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
                                                 angle=90, hoverPen={"color": (100,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
@@ -30,11 +30,11 @@ def redraw_vline(parent, xlims, massisosugg, color, hover = True, movable = Fals
 def redraw_vlines(parent):
     xlims,ylims = parent.vb.viewRange()
     redraw_vline(parent, xlims, parent.ml.suggestions,
-                                    color=parent.plot_settings["vert_lines_color_default"])
+                                    color=parent.plot_settings["vert_lines_color_suggestions"], width=parent.plot_settings["vert_lines_width_suggestions"])
     redraw_vline(parent, xlims, parent.ml.masslist,
-                                    color=parent.plot_settings["vert_lines_color_masslist"], movable=True, deletable = True)
+                                    color=parent.plot_settings["vert_lines_color_masslist"], width=parent.plot_settings["vert_lines_width_masslist"], movable=True, deletable = True)
     redraw_vline(parent, xlims, parent.ml.isotopes,
-                                    color=parent.plot_settings["vert_lines_color_isotopes"], hover=False)
+                                    color=parent.plot_settings["vert_lines_color_isotopes"], width=parent.plot_settings["vert_lines_width_isotopes"], hover=False)
 
 
 def redraw_localfit(parent,xlims):
@@ -188,7 +188,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
     def delete_vline(self):
         if self.value() in self.parent.ml.masslist.masses:
             self.parent.ml.delete_mass_from_masslist(self.value(), self.parent)
-            self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_default"])
+            self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_suggestions"])
             self.pen = self.penmasslist
             redraw_localfit(self.parent, self.xlims)
             self.update()

@@ -47,38 +47,12 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Initializing Window")
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-
-        self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
+        # self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
+        self.filename = None
         self.savefilename = None
-        # self.savefilename =   r"C:\Users\peaq\Desktop\manualPeakFitter"
-        self.init_Ui_file_not_loaded()
         self.file_loaded = False
+        self.init_Ui_file_not_loaded()
 
-        # self.init_basket_objects()
-
-        # self.init_plots()
-
-    def init_basket_objects(self):
-        #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
-        self.sp = mo.Spectrum(self.filename)
-        self.mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
-        # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
-        self.ml = mo.Masslist(self.mass_suggestions_ranges, self.filename)
-        self.plot_settings = {"vert_lines_color_default": 0.5,
-                              "vert_lines_color_masslist": "r",
-                              "vert_lines_color_isotopes": (0,210,0,100), # RGB tubel and last number gives the transparency (from 0 to 255)
-                              "average_spectrum_color" : (150,0,200),
-                              "max_spectrum_color": (120, 40, 200, 100),
-                              "min_spectrum_color": (30, 150, 40, 100),
-                              "sub_spectrum_color": (30, 70, 230, 100),
-                              "local_fit": (0,0,210),
-                              "background_color": "w",
-                              "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
-                              }
-        self.spectrumplot = []
-        self.spectrum_max_plot = []
-        self.spectrum_min_plot = []
-        self.subspec_plot = []
 
 
     def init_Ui_file_not_loaded(self):
@@ -112,12 +86,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # list of masses
         self.masslist_widget = QtWidgets.QListWidget(self)
-        self.masslist_widget.itemClicked.connect(self.jump_to_mass)
 
         self.label_jump_mass = QtWidgets.QLabel("Jump to mass: ")
         self.jump_to_mass_input = QtWidgets.QLineEdit()
         self.jump_to_mass_input.setValidator(QtGui.QDoubleValidator(0., 500., 4))
-        self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
 
@@ -125,29 +97,35 @@ class MainWindow(QtWidgets.QMainWindow):
         # create menu
         menubar = QtWidgets.QMenuBar()
         self.actionFile = menubar.addMenu("File")
+        # the po.openfile triggers init_UI_file_loaded() and init_plots()
         openfile = QtWidgets.QAction("Open", self)
         openfile.setShortcut("Ctrl+O")
         openfile.triggered.connect(lambda: po.open_file(self))
         self.actionFile.addAction(openfile)
-        self.savecsv = QtWidgets.QAction("Save Masslist to .cvs", self)
-        self.savecsv.setShortcut("Ctrl+Shift+S")
+
+        self.savecsv = QtWidgets.QAction("Save Masslist", self)
+        self.savecsv.setShortcut("Ctrl+S")
         self.actionFile.addAction(self.savecsv)
-
-
-        self.changemassranges = QtWidgets.QAction("Change Element ranges", self)
-        self.actionFile.addAction(self.changemassranges)
-
+        self.saveascsv = QtWidgets.QAction("Save Masslist as new file", self)
+        self.saveascsv.setShortcut("Ctrl+Alt+S")
+        self.actionFile.addAction(self.saveascsv)
 
         self.actionFile.addSeparator()
         quit = QtWidgets.QAction("Quit", self)
-        quit.setShortcut("Alt+F5")
+        quit.setShortcut("Alt+F4")
         quit.triggered.connect(lambda: sys.exit(0))
         self.actionFile.addAction(quit)
 
-        settingswindow = po.SettingsWindow(self)
-        settings = QtWidgets.QAction("Settings", self)
-        settings.triggered.connect(settingswindow.show)
-        menubar.addAction(settings)
+        self.settingsMenubar = menubar.addMenu("Settings")
+        self.plotsettings_button = QtWidgets.QAction("Plot Settings", self)
+        self.settingsMenubar.addAction(self.plotsettings_button)
+
+
+        self.changemassranges = QtWidgets.QAction("Change Element ranges", self)
+        self.settingsMenubar.addAction(self.changemassranges)
+
+        self.addElement = QtWidgets.QAction("Manually add Element", self)
+        self.settingsMenubar.addAction(self.addElement)
 
         helpwindow = po.HelpWindow(self)
         helpaction = QtWidgets.QAction("Help", self)
@@ -160,7 +138,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout1.addWidget(self.masslist_widget)
         self.verticalLayout1.addWidget(self.button)
         self.verticalLayout1.addWidget(self.save_button)
-
 
         self.setCentralWidget(self.centralwidget)
 
@@ -179,13 +156,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_button.clicked.connect(self.save_masslist_to_csv)
         # masslist shown on left
         self.ml.redo_qlist(self.masslist_widget)
+        self.masslist_widget.itemClicked.connect(self.jump_to_mass)
+        #jump to mass widget
+        self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
+
+
+        #menubar stuff
         # change range action in menubar
         changemassrangesWindow = po.SelectMassRangeWindow(self)
         self.changemassranges.triggered.connect(changemassrangesWindow.show)
+        # add new element action in menubar
+        addElementWindow = po.AddnewElement(self)
+        self.addElement.triggered.connect(addElementWindow.show)
 
+        self.plotsettings_window = po.PlotSettingsWindow(self)
+        self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
         # save to csv in menubar
-        self.savecsv.triggered.connect(self.save_masslist_to_csv)
-
+        self.saveascsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = True))
+        self.savecsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = False))
 
 
     def init_plots(self):
@@ -194,9 +182,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.setBackground(self.plot_settings["background_color"])
         self.graphWidget.addLegend()
         # make bg plots
-
         pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])
-
 
         # set the restrictions on the movement
         self.vb = self.spectrumplot.getViewBox()
@@ -210,6 +196,32 @@ class MainWindow(QtWidgets.QMainWindow):
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
 
+    def init_basket_objects(self):
+        #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
+        self.sp = mo.Spectrum(self.filename)
+        self.mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
+        # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
+        self.ml = mo.Masslist(self.mass_suggestions_ranges, self.filename)
+        self.plot_settings = {"vert_lines_color_suggestions": 0.5,
+                              "vert_lines_color_masslist": (38, 135, 20),
+                              "vert_lines_color_isotopes": (252, 3, 244, 100), # RGB tubel and last number gives the transparency (from 0 to 255)
+                              "vert_lines_width_suggestions": 1,
+                              "vert_lines_width_masslist": 2,
+                              "vert_lines_width_isotopes": 1.5,
+                              "average_spectrum_color" : (252, 49, 3),
+                              "max_spectrum_color": (122, 72, 6, 80),
+                              "min_spectrum_color": (11, 125, 191, 80),
+                              "sub_spectrum_color": (103, 42, 201, 80),
+                              "local_fit": (0,0,210),
+                              "background_color": "w",
+                              "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
+                              }
+        self.spectrumplot = []
+        self.spectrum_max_plot = []
+        self.spectrum_min_plot = []
+        self.subspec_plot = []
+
+
     def on_xlims_changed(self, viewbox):
         # for a similar examples look at:
         # import pyqtgraph.examples
@@ -217,7 +229,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # InfiniteLine Example
         #documentation https://pyqtgraph.readthedocs.io/en/latest/api_reference/graphicsItems/infiniteline.html
 
-        # whens scrolling through there comes a point where nothing is shown anymore
         xlims, ylims = viewbox.viewRange()
         print("xlims changed ", xlims, np.diff(xlims))
 
@@ -232,8 +243,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 pyqtgraph_objects.redraw_localfit(self,xlims)
             worker = Worker(to_worker)
             self.threadpool.start(worker)
-    def save_masslist_to_csv(self):
-        if self.savefilename == None:
+    def save_masslist_to_csv(self, saveas = False):
+        if self.savefilename == None or saveas:
             defaultsavefilename = os.path.join(self.filename,"masslist.csv")
             options = QtWidgets.QFileDialog.Options()
             self.savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
