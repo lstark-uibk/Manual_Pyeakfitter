@@ -19,7 +19,14 @@ def redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movable
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
-            sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
+            if np.any(element_numbers):
+                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
+                                                angle=90, hoverPen={"color": (100,0,0),"width": 2}, label= compound_name,
+                                                labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
+                                                           "rotateAxis":(1, 0),
+                                                           "anchors": [(0, 0), (0, 0)]},deletable=deletable)
+            else:
+                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(parent.plot_settings["vert_lines_color_masslist_without_composition"], width=width), hover = hover, movable= movable,
                                                 angle=90, hoverPen={"color": (100,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
@@ -29,11 +36,12 @@ def redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movable
 
 def redraw_vlines(parent):
     xlims,ylims = parent.vb.viewRange()
-    redraw_vline(parent, xlims, parent.ml.suggestions,
-                                    color=parent.plot_settings["vert_lines_color_suggestions"], width=parent.plot_settings["vert_lines_width_suggestions"])
-    redraw_vline(parent, xlims, parent.ml.masslist,
-                                    color=parent.plot_settings["vert_lines_color_masslist"], width=parent.plot_settings["vert_lines_width_masslist"], movable=True, deletable = True)
-    redraw_vline(parent, xlims, parent.ml.isotopes,
+    if np.diff(xlims) < 0.7:
+        redraw_vline(parent, xlims, parent.ml.suggestions,
+                                        color=parent.plot_settings["vert_lines_color_suggestions"], width=parent.plot_settings["vert_lines_width_suggestions"])
+        redraw_vline(parent, xlims, parent.ml.masslist,
+                                        color=parent.plot_settings["vert_lines_color_masslist"], width=parent.plot_settings["vert_lines_width_masslist"], movable=True, deletable = True)
+        redraw_vline(parent, xlims, parent.ml.isotopes,
                                     color=parent.plot_settings["vert_lines_color_isotopes"], width=parent.plot_settings["vert_lines_width_isotopes"], hover=False)
 
 

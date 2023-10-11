@@ -68,31 +68,69 @@ class HelpWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(self.centralWidget)
 
+class AddnewElement(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(AddnewElement, self).__init__(parent)
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
+        self.parent = parent
+        #make form layout
+        form = QtWidgets.QFormLayout(self)
+        header = QtWidgets.QLabel("Make a new suggestion compound ")
+        form.addRow(header)
+        self.compound_inquiry = {}
+        for element in self.parent.ml.names_elements:
+            self.compound_inquiry[element] = QtWidgets.QLineEdit()
+            self.compound_inquiry[element].setValidator(QtGui.QIntValidator(10,99))
+            form.addRow(element, self.compound_inquiry[element])
+
+        collectbutton = QtWidgets.QPushButton("Add Element")
+        collectbutton.clicked.connect(self.addElement)
+        form.addRow(collectbutton)
+        closebutton = QtWidgets.QPushButton("Close")
+        closebutton.clicked.connect(self.closeWindow)
+        form.addRow(closebutton)
+
+        self.centralLayout.addLayout(form)
+        self.setCentralWidget(self.centralWidget)
+
+    def addElement(self):
+        compoundarray = [0]*len(self.parent.ml.names_elements)
+        for index, compound in enumerate(self.compound_inquiry):
+            if self.compound_inquiry[compound].text() == '':
+                compoundarray[index] = 0
+            else:
+                compoundarray[index] = int(self.compound_inquiry[compound].text())
+        self.parent.ml.add_suggestion_to_sugglist(compoundarray, self.parent)
+
+    def closeWindow(self):
+        self.close()
 
 
 
 class Validator_mass_ranges(QtGui.QValidator):
 
-    def __init__(self,i, j, parent):
-        QtGui.QValidator.__init__(self,parent)
+    def __init__(self,i, j,selectmasswindow, mainwindow):
+        QtGui.QValidator.__init__(self,selectmasswindow)
         #make a validator for every input with the i,j value stored
         self.i = i -1
         self.j = j -1
-        self.parent = parent
+        self.selectmasswindow = selectmasswindow
+        self.mainwindow = mainwindow
 
     def validate(self, a0, a1):
         if a0.isdigit() or a0 == "0":
             if a1 < 3:
                 digit = int(a0)
-                if len(self.parent.inputs) < len(self.parent.mass_suggestions_ranges): # if we didnot add all the input fields we also skip the validation
+                if len(self.selectmasswindow.inputs) < len(self.mainwindow.ml.mass_suggestions_ranges): # if we didnot add all the input fields we also skip the validation
                     return (QtGui.QValidator.Acceptable, a0, a1)
 
                 if self.j == 0: # the input is a minimum
-                    if digit <= int(self.parent.inputs[self.i][1].text()): # check whether it is lower than the maximum
+                    if digit <= int(self.selectmasswindow.inputs[self.i][1].text()): # check whether it is lower than the maximum
                         return (QtGui.QValidator.Acceptable, a0, a1)
 
                 if self.j == 1:  # the input is a maximum
-                    if digit >= int(self.parent.inputs[self.i][0].text()):  # check whether it is higher than the minimum
+                    if digit >= int(self.selectmasswindow.inputs[self.i][0].text()):  # check whether it is higher than the minimum
                         return (QtGui.QValidator.Acceptable, a0, a1)
 
             return (QtGui.QValidator.Invalid, a0, a1)
@@ -114,9 +152,9 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         self.gridlayout.addWidget(QtWidgets.QLabel("Upper Limit"), 0, 2)
         self.labels = []
         self.inputs = []
-        self.mass_suggestions_ranges = parent.mass_suggestions_ranges
+        self.mass_suggestions_ranges = parent.ml.mass_suggestions_ranges
 
-        for [i, name], suggrange in zip(enumerate(parent.ml.names_elements),parent.mass_suggestions_ranges):
+        for [i, name], suggrange in zip(enumerate(parent.ml.names_elements),parent.ml.mass_suggestions_ranges):
             i = i+1
             label = self.gridlayout.addWidget(QtWidgets.QLabel(name), i, 0)
             self.labels.append(label)
@@ -124,7 +162,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
             for j in range(1,3):
                 input = QtWidgets.QLineEdit()
                 thisline.append(input)
-                validator = Validator_mass_ranges(i,j,self)
+                validator = Validator_mass_ranges(i,j,selectmasswindow = self, mainwindow = parent)
                 input.setValidator(validator)
                 input.setText(str(suggrange[j-1]))
                 self.gridlayout.addWidget(input , i, j)
@@ -140,62 +178,13 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
 
     def change_ranges(self):
         mass_suggestions_ranges_new = [tuple([int(x.text()) for x in row]) for row in self.inputs]
-        self.parent.mass_suggestions_ranges = mass_suggestions_ranges_new
+        self.parent.ml.mass_suggestions_ranges = mass_suggestions_ranges_new
         pyqtgraph_objects.remove_all_vlines(self.parent)
-        self.parent.ml.reinit(self.parent.mass_suggestions_ranges,self.parent.filename)
+        self.parent.ml.reinit(self.parent.filename)
         pyqtgraph_objects.redraw_vlines(self.parent)
         print("change the input ranges to")
-        print(self.parent.mass_suggestions_ranges)
+        print(self.parent.ml.mass_suggestions_ranges)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
-
-class AddnewElement(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
-        super(AddnewElement, self).__init__(parent)
-        self.centralWidget = QtWidgets.QWidget(self)
-        self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
-        self.gridlayout = QtWidgets.QGridLayout()
-        self.parent = parent
-
-        # self.gridlayout.addWidget(QtWidgets.QLabel("Lower Limit"), 0, 1)
-        # self.gridlayout.addWidget(QtWidgets.QLabel("Upper Limit"), 0, 2)
-        # self.labels = []
-        # self.inputs = []
-        # self.mass_suggestions_ranges = parent.mass_suggestions_ranges
-
-        # for [i, name], suggrange in zip(enumerate(parent.ml.names_elements),parent.mass_suggestions_ranges):
-        #     i = i+1
-        #     label = self.gridlayout.addWidget(QtWidgets.QLabel(name), i, 0)
-        #     self.labels.append(label)
-        #     thisline = []
-        #     for j in range(1,3):
-        #         input = QtWidgets.QLineEdit()
-        #         thisline.append(input)
-        #         validator = Validator_exp(i,j,self)
-        #         input.setValidator(validator)
-        #         input.setText(str(suggrange[j-1]))
-        #         self.gridlayout.addWidget(input , i, j)
-        #     self.inputs.append(thisline)
-
-
-        # self.centralLayout.addLayout(self.gridlayout)
-        # collectbutton = QtWidgets.QPushButton("OK")
-        # collectbutton.clicked.connect(self.change_ranges)
-        # self.centralLayout.addWidget(collectbutton)
-        # self.setCentralWidget(self.centralWidget)
-
-
-    def change_ranges(self):
-        pass
-        # mass_suggestions_ranges_new = [tuple([int(x.text()) for x in row]) for row in self.inputs]
-        # self.parent.mass_suggestions_ranges = mass_suggestions_ranges_new
-        # pyqtgraph_objects.remove_all_vlines(self.parent)
-        # self.parent.ml.reinit(self.parent.mass_suggestions_ranges,self.parent.filename)
-        # pyqtgraph_objects.redraw_vlines(self.parent)
-        # print("change the input ranges to")
-        # print(self.parent.mass_suggestions_ranges)
-        # print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
-
-
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):

@@ -79,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout2.addWidget(self.slider)
 
         # other widgets for the verticalLayout1
-        self.button = QtWidgets.QPushButton("Print Masslist")
+        self.button = QtWidgets.QPushButton("Print suggestions")
 
         self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
 
@@ -141,6 +141,31 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(self.centralwidget)
 
+    def init_basket_objects(self):
+        #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
+        self.sp = mo.Spectrum(self.filename)
+        self.ml = mo.Masslist(self.filename)
+        self.plot_settings = {"vert_lines_color_suggestions": 0.5,
+                              "vert_lines_color_masslist": (38, 135, 20),
+                              "vert_lines_color_masslist_without_composition": (13, 110, 184),
+                              "vert_lines_color_isotopes": (252, 3, 244, 100), # RGB tubel and last number gives the transparency (from 0 to 255)
+                              "vert_lines_width_suggestions": 1,
+                              "vert_lines_width_masslist": 2,
+                              "vert_lines_width_isotopes": 1.5,
+                              "average_spectrum_color" : (252, 49, 3),
+                              "max_spectrum_color": (122, 72, 6, 80),
+                              "min_spectrum_color": (11, 125, 191, 80),
+                              "sub_spectrum_color": (103, 42, 201, 80),
+                              "local_fit": (0,0,210),
+                              "background_color": "w",
+                              "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
+                              }
+        self.spectrumplot = []
+        self.spectrum_max_plot = []
+        self.spectrum_min_plot = []
+        self.subspec_plot = []
+
+
     def init_UI_file_loaded(self):
         #add functionality to:
         #slider
@@ -150,8 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.slider.setTickInterval(1)
         self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
         self.slider.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
-        # print masslist button
-        self.button.clicked.connect(lambda: print(*self.ml.masslist.masses, sep="\n"))
+        # print suggestion list button
+        self.button.clicked.connect(self.printsugg)
         # save masslist button
         self.save_button.clicked.connect(self.save_masslist_to_csv)
         # masslist shown on left
@@ -175,7 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveascsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = True))
         self.savecsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = False))
 
-
+    def printsugg(self):
+        xlims, ylims = self.vb.viewRange()
+        print(*self.ml.suggestions.masses[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])],sep="\n")
     def init_plots(self):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
@@ -196,30 +223,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
 
-    def init_basket_objects(self):
-        #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
-        self.sp = mo.Spectrum(self.filename)
-        self.mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
-        # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
-        self.ml = mo.Masslist(self.mass_suggestions_ranges, self.filename)
-        self.plot_settings = {"vert_lines_color_suggestions": 0.5,
-                              "vert_lines_color_masslist": (38, 135, 20),
-                              "vert_lines_color_isotopes": (252, 3, 244, 100), # RGB tubel and last number gives the transparency (from 0 to 255)
-                              "vert_lines_width_suggestions": 1,
-                              "vert_lines_width_masslist": 2,
-                              "vert_lines_width_isotopes": 1.5,
-                              "average_spectrum_color" : (252, 49, 3),
-                              "max_spectrum_color": (122, 72, 6, 80),
-                              "min_spectrum_color": (11, 125, 191, 80),
-                              "sub_spectrum_color": (103, 42, 201, 80),
-                              "local_fit": (0,0,210),
-                              "background_color": "w",
-                              "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
-                              }
-        self.spectrumplot = []
-        self.spectrum_max_plot = []
-        self.spectrum_min_plot = []
-        self.subspec_plot = []
 
 
     def on_xlims_changed(self, viewbox):
@@ -230,7 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #documentation https://pyqtgraph.readthedocs.io/en/latest/api_reference/graphicsItems/infiniteline.html
 
         xlims, ylims = viewbox.viewRange()
-        print("xlims changed ", xlims, np.diff(xlims))
+        # print("xlims changed ", xlims, np.diff(xlims))
 
         if np.diff(xlims) > 1.1:
             pyqtgraph_objects.remove_all_vlines(self)
@@ -266,12 +269,14 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Saved Masslist to", self.savefilename)
 
     def jump_to_mass(self, event):
-        print(event)
         if type(event) is str:
             mass = float(event)
+        elif type(event) is float:
+            mass = event
         else:
             mass, compoundstr = event.text().rsplit('  ', 1)
             mass = float(mass)
+        print("jump to mass: ", mass)
         xlims, ylims = self.vb.viewRange()
         xrange = xlims[1] - xlims[0]
         target_mass = mass

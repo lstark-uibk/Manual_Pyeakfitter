@@ -16,10 +16,10 @@ def load_masslist(Filename):
 
 # masslist = data(*load_masslist(filename))
 
-def make_isotope(mass, element_composition):
-    IsotopeMass = np.full(2, np.nan)
-    IsotopicAbundance  = np.full(2, np.nan)
-    Isotope_Elemental_compositions = np.full((2,8), np.nan)
+def make_isotope(mass, element_composition, Nr_isotopes):
+    IsotopeMass = np.full(Nr_isotopes, np.nan)
+    IsotopicAbundance  = np.full(Nr_isotopes, np.nan)
+    Isotope_Elemental_compositions = np.full((Nr_isotopes,8), np.nan)
     # make isotopes see: https://www.chem.ualberta.ca/~massspec/atomic_mass_abund.pdf
     if element_composition[0] > 0:  # if the element contains carbons we make an isotope
         IsotopeMass[0] = mass - 12 + 13.003355  # contains one isotope
@@ -32,32 +32,32 @@ def make_isotope(mass, element_composition):
         n, k = (element_composition[0], 2)
         IsotopicAbundance[1] = math.comb(n,k) * 0.010816 ** 2  # binomial coeficient since we have bin(n,2) possibilities to of 2 out n C atoms atoms to be C13
         Isotope_Elemental_compositions[1,:] = element_composition - [2, 0, 0, 0, 0, 0, 0, 0] + [0, 2, 0, 0, 0, 0, 0,0]  # the composition is one less C atom, on more C13
+    # if it contains an oxygen
+    if element_composition[5] > 0:
+        IsotopeMass[2] = mass - 15.99492 + 17.99916
+        n, k = (element_composition[5], 1)
+        IsotopicAbundance[2] = math.comb(n, k) * 0.00205      #abundance out of https://en.wikipedia.org/wiki/Isotopes_of_oxygen
+        Isotope_Elemental_compositions[2, :] = element_composition - [0, 0, 0, 0, 0, 1, 0, 0] + [0, 0, 0, 0, 0, 0, 1, 0]
+
 
     return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
 
-def load_isotopes(masslist):
+def load_isotopes(masslist, Nr_isotopes):
     # here it is important, that the index in the isotopes is always the same as the index in the masslist
-    Isotope_Elemental_compositions = np.full((masslist.masses.shape[0], 2, masslist.element_numbers.shape[1]), np.nan)
-    IsotopeMasses = np.full((masslist.masses.shape[0], 2), np.nan)
-    IsotopicAbundance = np.full((masslist.masses.shape[0], 2), np.nan)
+    Isotope_Elemental_compositions = np.full((masslist.masses.shape[0], Nr_isotopes, masslist.element_numbers.shape[1]), np.nan)
+    IsotopeMasses = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
+    IsotopicAbundance = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
 
     for i, (mass, element_composition) in enumerate(zip(masslist.masses, masslist.element_numbers)):
-        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:] = make_isotope(mass, element_composition)
+        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:] = make_isotope(mass, element_composition, Nr_isotopes)
+    print(IsotopeMasses)
     return [IsotopeMasses, Isotope_Elemental_compositions], {"IsotopicAbundance" : IsotopicAbundance}
 
 
 #
 # Mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 3), (0, 3), (0, 0), (0, 2)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
-def load_suggestions(Mass_suggestions_ranges, filtersanemasses = True):
-    Masses_elements = np.array([12,
-                                13.00335,
-                                1.00783,
-                                1.007276,
-                                14.00307,
-                                15.99492,
-                                17.99916,
-                                31.97207
-                                ]),
+def load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses = True):
+    Masses_elements = masses_elements
 
     Listofranges = [list(range(A[0], A[1] + 1)) for A in Mass_suggestions_ranges]
     Element_numbers = np.array(list(itertools.product(*Listofranges)))
@@ -93,6 +93,7 @@ class Data():
 
 
 class Masslist():
+    # to add a new element fill out here all the details
     names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
     masses_elements = np.array([12,
@@ -103,19 +104,43 @@ class Masslist():
                                 15.99492,
                                 17.99916,
                                 31.97207
-                                ]),
+                                ])
+    mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
+    # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
-    def __init__(self,Mass_suggestions_ranges, Filename):
+    nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
+    nr_elements = len(names_elements)
+    def __init__(self, Filename):
         self.filename = Filename
-        args, kwargs = load_suggestions(Mass_suggestions_ranges)
+        args, kwargs = load_suggestions(self.mass_suggestions_ranges, masses_elements = self.masses_elements)
         self.suggestions = Data(*args, **kwargs)
         self.masslist = Data(*load_masslist(Filename))
-        args, kwargs = load_isotopes(self.masslist)
+        args, kwargs = load_isotopes(self.masslist, self.nr_isotopes)
         self.isotopes = Data(*args, **kwargs)
         self.currently_hovered = []
 
-    def reinit(self, Mass_suggestions_ranges, Filename):
-        self.__init__(Mass_suggestions_ranges, Filename)
+    def reinit(self, Filename):
+        self.__init__(Filename)
+
+    def add_suggestion_to_sugglist(self, compoundelements, parent):
+        if len(compoundelements) == len(self.names_elements):
+            mass = np.sum(np.array(compoundelements) * self.masses_elements)
+            if compoundelements not in self.suggestions.element_numbers.tolist():
+                # add to suggestion list
+                self.suggestions.element_numbers = np.vstack([self.suggestions.element_numbers,compoundelements])
+                self.suggestions.masses = np.append(self.suggestions.masses,mass)
+                print("add mass ", mass, ",", get_names_out_of_element_numbers(compoundelements) , "to suggestionslist")
+
+                sortperm = np.argsort(self.suggestions.masses)
+                self.suggestions.masses = self.suggestions.masses[sortperm]
+                self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
+
+                pyqtgraph_objects.redraw_vlines(parent)
+            else:
+                print("Compound already in suggestions list")
+            xlims, ylims = parent.vb.viewRange()
+            parent.vb.setXRange(xlims[0], xlims[0]+0.2)
+            parent.jump_to_mass(float(mass))
 
     def add_mass_to_masslist(self, mass, parent):
         # add to masslist
@@ -124,7 +149,7 @@ class Masslist():
             if mass in self.suggestions.masses:
                 element_numbers_this = self.suggestions.element_numbers[np.where(self.suggestions.masses == mass)]
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, element_numbers_this, axis=0)
-                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this = make_isotope(mass, element_numbers_this.flatten())
+                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes)
                 self.isotopes.masses = np.vstack([self.isotopes.masses, isotope_mass_this])
                 self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, isotopic_abundance_this])
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, np.expand_dims(isotope_element_numbers_this, axis= 0)])
@@ -134,9 +159,9 @@ class Masslist():
 
             else: # if it is not in the suggestions we cannot show isotopes
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, [[0]*len(self.names_elements)], axis=0)
-                self.isotopes.masses = np.vstack([self.isotopes.masses, [np.nan]*2])
-                self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, [np.nan]*2])
-                self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, [[[np.nan]*8]*2]])
+                self.isotopes.masses = np.vstack([self.isotopes.masses, [np.nan]*self.nr_isotopes])
+                self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, [np.nan]*self.nr_isotopes])
+                self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, [[[np.nan]*self.nr_elements]*self.nr_isotopes]])
                 print("add mass ", mass, "to masslist")
 
 
@@ -171,8 +196,6 @@ class Masslist():
             self.isotopes.masses = np.delete(self.isotopes.masses,index_of_deletion,axis = 0)
             self.isotopes.isotopic_abundance = np.delete(self.isotopes.isotopic_abundance,index_of_deletion,axis = 0)
             self.isotopes.element_numbers = np.delete(self.isotopes.element_numbers,index_of_deletion,axis = 0)
-
-
             pyqtgraph_objects.redraw_vlines(parent)
 
     def redo_qlist(self,qlist):
@@ -246,8 +269,10 @@ class Spectrum():
         masslist_masses_in_range = ml.masslist.masses[masslist_mask]
         isotopes_in_range = ml.isotopes.masses[masslist_mask]
         isotopicabundance_in_range = ml.isotopes.isotopic_abundance[masslist_mask]
+        print("isotopes in range", isotopes_in_range)
 
         list_isotopes_in_range = np.hstack([masslist_masses_in_range[:, np.newaxis], isotopes_in_range])
+        print("mass and isotope in range", list_isotopes_in_range)
         A = np.empty((massaxis_in_range.size, masslist_masses_in_range.size))
 
         for i, iso_list_mass in enumerate(list_isotopes_in_range):
