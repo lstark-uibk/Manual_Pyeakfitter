@@ -79,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout2.addWidget(self.slider)
 
         # other widgets for the verticalLayout1
-        self.button = QtWidgets.QPushButton("Print suggestions")
+        self.button = QtWidgets.QPushButton("Print suggestions in view range")
 
         self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
 
@@ -202,7 +202,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def printsugg(self):
         xlims, ylims = self.vb.viewRange()
-        print(*self.ml.suggestions.masses[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])],sep="\n")
+        print(*np.c_[self.ml.suggestions.masses[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])],
+                mo.get_names_out_of_element_numbers(self.ml.suggestions.element_numbers[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])])], sep="\n")
     def init_plots(self):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
@@ -254,7 +255,6 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                 "Save File", defaultsavefilename, "csv_files(*.csv)",
                                                                 options=options)
 
-            print(self.savefilename)
         head = "# Elements: \nC	C(13)	H	H+	N	O	O(18)	S\n	C					O\n12	13.003355	1.007825	1.007276	14.003074	15.994915	17.99916	31.97207\n\n# Masses: \nC	C(13)	H	H+	N	O	O(18)	S	Mass	Name\n"
         with open(self.savefilename, "w") as file:
             file.write(head)
@@ -287,7 +287,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # ev pos is the position of the mouseclick in pixel relative to the window, map it onto the view values
         xlims, ylims = self.vb.viewRange()
         if ev.double() and np.diff(xlims) < 1.1:
-            print(ev.pos())
             xpos = self.vb.mapToView(ev.pos()).x()
             self.ml.add_mass_to_masslist(xpos,self)
             pyqtgraph_objects.redraw_localfit(self,xlims)
@@ -301,9 +300,10 @@ class MainWindow(QtWidgets.QMainWindow):
             xlims, ylims = self.vb.viewRange()
             self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
-            print(self.ml.currently_hovered)
-            self.ml.currently_hovered.delete_vline()
-
+            print(self.ml.currently_hovered.value())
+            self.ml.delete_mass_from_masslist(self.ml.currently_hovered.value(), self)
+            xlims, ylims = self.vb.viewRange()
+            pyqtgraph_objects.redraw_localfit(self, xlims)
 
 
 def main():

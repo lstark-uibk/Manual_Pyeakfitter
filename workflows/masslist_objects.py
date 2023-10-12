@@ -5,57 +5,73 @@ import itertools
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import timeit
 
-def load_masslist(Filename):
+def load_masslist(Filename, nr_elements_masslistproposed):
     with h5py.File(Filename, "r") as f:
         Masslist = f["MassList"]
         Elemental_compositions = f["ElementalCompositions"]
         Masses = np.array(Masslist[()])
         Element_numbers = np.array(Elemental_compositions[()])
+        difference_nr_element_masslistloaded_masslistproposed =  nr_elements_masslistproposed - Element_numbers.shape[1]
+        if difference_nr_element_masslistloaded_masslistproposed != 0:
+            for i in range(0, difference_nr_element_masslistloaded_masslistproposed):
+                Element_numbers = np.c_[Element_numbers, np.zeros(Element_numbers.shape[0])]
 
         return Masses,Element_numbers
 
 # masslist = data(*load_masslist(filename))
 
-def make_isotope(mass, element_composition, Nr_isotopes):
+def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed):
+
+    '''
+    to add a new Isotope add another block of the following:
+    1) change Nr_isotopes in Masslist() to Nr_isotopes+1
+    2) add an Isotope element the same that you would do with a normal element (name it eg. O17)
+    3) add the following at the end of this function
+    if element_composition[element_composition == x ] > 0:              x = str of the Element you want to add an isotope for
+        IsotopeMass[y] = mass - melement + miso  # contains one isotope    y = position of Isotope in list (probaly Nr_isotopes+1 if you add new isotope); melement = mass of element; miso = mass of isotope
+        n, k = (element_composition[element_composition == x ], 1)      x = str of the Element you want to add an isotope for
+        IsotopicAbundance[0] = math.comb(n,k) * isotopic_abund          isotopic_abund = isotopic Abundance can be taken out of https://www.sisweb.com/mstools/isotope.htm
+        Isotope_Elemental_compositions[0,:] = element_composition - [1 if i == x else 0 for i in range(0,nr_elements)] + [1 if i == y else 0 for i in range(0,nr_elements)]
+        x = position of element; y = position of isotope Subtract the element (eg. [1, 0, 0, 0, 0, 0, 0, 0] is a C) and add the Isotope (eg. [0, 1, 0, 0, 0, 0, 0, 0] is a C13)
+
+    '''
     IsotopeMass = np.full(Nr_isotopes, np.nan)
     IsotopicAbundance  = np.full(Nr_isotopes, np.nan)
-    Isotope_Elemental_compositions = np.full((Nr_isotopes,8), np.nan)
+    Isotope_Elemental_compositions = np.full((Nr_isotopes,nr_elements_masslistproposed), np.nan)
+    nr_elements = len(element_composition)
     # make isotopes see: https://www.chem.ualberta.ca/~massspec/atomic_mass_abund.pdf
     if element_composition[0] > 0:  # if the element contains carbons we make an isotope
         IsotopeMass[0] = mass - 12 + 13.003355  # contains one isotope
-        n, k = (element_composition[0], 1)
+        n, k = (int(element_composition[0]), 1)
         IsotopicAbundance[0] = math.comb(n,k) * 0.010816  # every C atom has a chance of 1.08% to be an isotope taken out of https://www.sisweb.com/mstools/isotope.htm
-        Isotope_Elemental_compositions[0,:] = element_composition - [1, 0, 0, 0, 0, 0, 0, 0] + [0, 1, 0, 0, 0, 0, 0,0]  # the composition is one less C atom, on more C13
+        Isotope_Elemental_compositions[0,:] = element_composition - [1 if i == 0 else 0 for i in range(0,nr_elements)] + [1 if i == 1 else 0 for i in range(0,nr_elements)]  # the composition is one less C atom, on more C13
 
     if element_composition[0] > 1:  # if it contains more than carobons there is a likelyhood, that the molecule contains 2 C13
         IsotopeMass[1] = IsotopeMass[0] - 12 + 13.003355
-        n, k = (element_composition[0], 2)
+        n, k = (int(element_composition[0]), 2)
         IsotopicAbundance[1] = math.comb(n,k) * 0.010816 ** 2  # binomial coeficient since we have bin(n,2) possibilities to of 2 out n C atoms atoms to be C13
-        Isotope_Elemental_compositions[1,:] = element_composition - [2, 0, 0, 0, 0, 0, 0, 0] + [0, 2, 0, 0, 0, 0, 0,0]  # the composition is one less C atom, on more C13
+        Isotope_Elemental_compositions[1,:] = element_composition - [2 if i == 0 else 0 for i in range(0,nr_elements)] + [2 if i == 1 else 0 for i in range(0,nr_elements)]  # the composition is 2 less C atom, 2 more C13
     # if it contains an oxygen
     if element_composition[5] > 0:
         IsotopeMass[2] = mass - 15.99492 + 17.99916
-        n, k = (element_composition[5], 1)
+        n, k = (int(element_composition[5]), 1)
         IsotopicAbundance[2] = math.comb(n, k) * 0.00205      #abundance out of https://en.wikipedia.org/wiki/Isotopes_of_oxygen
-        Isotope_Elemental_compositions[2, :] = element_composition - [0, 0, 0, 0, 0, 1, 0, 0] + [0, 0, 0, 0, 0, 0, 1, 0]
-
+        Isotope_Elemental_compositions[2, :] = element_composition - [1 if i == 5 else 0 for i in range(0,nr_elements)] + [2 if i == 6 else 0 for i in range(0,nr_elements)]
 
     return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
 
-def load_isotopes(masslist, Nr_isotopes):
+def load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
     # here it is important, that the index in the isotopes is always the same as the index in the masslist
     Isotope_Elemental_compositions = np.full((masslist.masses.shape[0], Nr_isotopes, masslist.element_numbers.shape[1]), np.nan)
     IsotopeMasses = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
     IsotopicAbundance = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
 
     for i, (mass, element_composition) in enumerate(zip(masslist.masses, masslist.element_numbers)):
-        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:] = make_isotope(mass, element_composition, Nr_isotopes)
-    print(IsotopeMasses)
+        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:] = make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed)
     return [IsotopeMasses, Isotope_Elemental_compositions], {"IsotopicAbundance" : IsotopicAbundance}
 
 
 #
-# Mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 3), (0, 3), (0, 0), (0, 2)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
 def load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses = True):
     Masses_elements = masses_elements
 
@@ -93,8 +109,9 @@ class Data():
 
 
 class Masslist():
-    # to add a new element fill out here all the details
-    names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
+    # to add a new element chnage the following 4 variables with the information on the compound, to change sane mass rules go to load_suggestions function (which compounds are suggested depending on some ratio eg. C:O ratio)
+    # to add a new isotope follow the recipe in the make_isotope function
+    names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S"]
     order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
     masses_elements = np.array([12,
                                 13.00335,
@@ -103,8 +120,8 @@ class Masslist():
                                 14.00307,
                                 15.99492,
                                 17.99916,
-                                31.97207
-                                ])
+                                31.97207,
+                               ])
     mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
     # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
@@ -114,8 +131,8 @@ class Masslist():
         self.filename = Filename
         args, kwargs = load_suggestions(self.mass_suggestions_ranges, masses_elements = self.masses_elements)
         self.suggestions = Data(*args, **kwargs)
-        self.masslist = Data(*load_masslist(Filename))
-        args, kwargs = load_isotopes(self.masslist, self.nr_isotopes)
+        self.masslist = Data(*load_masslist(Filename, self.nr_elements))
+        args, kwargs = load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
         self.isotopes = Data(*args, **kwargs)
         self.currently_hovered = []
 
@@ -149,7 +166,7 @@ class Masslist():
             if mass in self.suggestions.masses:
                 element_numbers_this = self.suggestions.element_numbers[np.where(self.suggestions.masses == mass)]
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, element_numbers_this, axis=0)
-                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes)
+                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes, self.nr_elements)
                 self.isotopes.masses = np.vstack([self.isotopes.masses, isotope_mass_this])
                 self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, isotopic_abundance_this])
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, np.expand_dims(isotope_element_numbers_this, axis= 0)])
@@ -299,22 +316,40 @@ class Spectrum():
 
 def get_names_out_of_element_numbers(compound_array):
     # only if any compounds are in compound array give a string
-    if np.any(compound_array):
-        order_of_letters = Masslist.order_of_letters
-        names_elements = Masslist.names_elements
-        compoundletters = ""
-        for index, order in enumerate(order_of_letters):
-            # before the last letter (H+) add a " "
-            if index == len(order_of_letters)-1:
-                compoundletters += " "
-            if compound_array[order] == 0:
-                pass
-            if compound_array[order] == 1:
-                compoundletters += names_elements[order]
-            if compound_array[order] > 1:
-                compoundletters += names_elements[order] + str(round(compound_array[order]))
+    '''
+    compound_array: np array with shape (nr_elements, nr_compounds)
 
-        return compoundletters
-    return ""
+    return  string if compound_array is (nr_elements, 1) with compound name
+            list else with compound names
+    '''
+    compoundname_list = []
+
+    for compound in compound_array:
+        if len(compound_array.shape) == 1:
+            compound = compound_array
+        if np.any(compound):
+            order_of_letters = Masslist.order_of_letters
+            names_elements = Masslist.names_elements
+            compoundletters = ""
+            for index, order in enumerate(order_of_letters):
+                # before the last letter (H+) add a " "
+                if index == len(order_of_letters)-1:
+                    compoundletters += " "
+                if compound[order] == 0:
+                    pass
+                if compound[order] == 1:
+                    compoundletters += names_elements[order]
+                if compound[order] > 1:
+                    compoundletters += names_elements[order] + str(round(compound[order]))
+            compoundname_list.append(compoundletters)
+            if len(compound_array.shape) == 1:
+                return compoundletters
+        else:
+            if len(compound_array.shape) == 1:
+                return ""
+            compoundname_list.append("")
+
+    return compoundname_list
+
 
 

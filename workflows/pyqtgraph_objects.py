@@ -195,6 +195,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
 
     def delete_vline(self):
         if self.value() in self.parent.ml.masslist.masses:
+            print("Delete Mass ", self.value() ," out of Masslist")
             self.parent.ml.delete_mass_from_masslist(self.value(), self.parent)
             self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_suggestions"])
             self.pen = self.penmasslist
