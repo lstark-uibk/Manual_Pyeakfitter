@@ -18,8 +18,6 @@ def load_masslist(Filename, nr_elements_masslistproposed):
 
         return Masses,Element_numbers
 
-# masslist = data(*load_masslist(filename))
-
 def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed):
 
     '''

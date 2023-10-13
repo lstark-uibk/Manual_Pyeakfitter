@@ -124,7 +124,36 @@ def redraw_subspec(parent):
 
 
 class InfiniteLine_Mass(pg.InfiniteLine):
+    """
+    A class inheriting the Attributes from pyqtgraph.InfiniteLine and adding the
+    ...
+
+    Attributes
+    ----------
+    says_str : str
+        a formatted string to print out what the animal says
+    name : str
+        the name of the animal
+    sound : str
+        the sound that the animal makes
+    num_legs : int
+        the number of legs the animal has (default 4)
+
+    Methods
+    -------
+    says(sound=None)
+        Prints the animals name and what sound it makes
+    """
     def __init__(self,Parent,hover=True, deletable = False ,*args,**kwargs):
+        """
+        Parameters
+        ----------
+        Parent : object
+            Mainwindow object where the Line will be drawn
+        hover : True/False
+        deletable : True/False
+        *args,**kwargs: arguments for pyqtgraph.InfiniteLin
+        """
         self.parent = Parent
         super().__init__(*args,**kwargs)
         self.hover = hover
@@ -196,14 +225,3 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 else:
                     self.parent.ml.add_mass_to_masslist(self.value(), self.parent)
                 redraw_localfit(self.parent, self.xlims)
-
-    def delete_vline(self):
-        if self.value() in self.parent.ml.masslist.masses:
-            print("Delete Mass ", self.value() ," out of Masslist")
-            self.parent.ml.delete_mass_from_masslist(self.value(), self.parent)
-            self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_suggestions"])
-            self.pen = self.penmasslist
-            redraw_localfit(self.parent, self.xlims)
-            self.update()
-
-
