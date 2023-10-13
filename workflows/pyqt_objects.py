@@ -103,7 +103,7 @@ class AddnewElement(QtWidgets.QMainWindow):
                 compoundarray[index] = 0
             else:
                 compoundarray[index] = int(self.compound_inquiry[compound].text())
-        self.parent.ml.add_suggestion_to_sugglist(compoundarray, self.parent)
+        self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
 
     def closeWindow(self):
         self.close()
@@ -183,7 +183,8 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         self.parent.ml.mass_suggestions_ranges = mass_suggestions_ranges_new
         pyqtgraph_objects.remove_all_vlines(self.parent)
         self.parent.ml.reinit(self.parent.filename)
-        pyqtgraph_objects.redraw_vlines(self.parent)
+        xlims, ylims = self.parent.vb.viewRange()
+        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
         print("change the input ranges to")
         print(self.parent.ml.mass_suggestions_ranges)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)

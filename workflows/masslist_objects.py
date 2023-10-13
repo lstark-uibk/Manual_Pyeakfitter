@@ -5,7 +5,7 @@ import itertools
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import timeit
 
-def load_masslist(Filename, nr_elements_masslistproposed):
+def _load_masslist(Filename, nr_elements_masslistproposed):
     with h5py.File(Filename, "r") as f:
         Masslist = f["MassList"]
         Elemental_compositions = f["ElementalCompositions"]
@@ -19,8 +19,29 @@ def load_masslist(Filename, nr_elements_masslistproposed):
         return Masses,Element_numbers
 
 def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed):
+    '''Create the Masses, Elemental compositions and Isotopic abundances of isotopes (with 1,2 C13 and O18 right now) dor a given input compound
 
-    '''
+    Parameters
+    ----------
+    mass : float
+        mass of the compound you want to create the isotopes of
+    element_composition : list
+        element composition of the compound you want to create the isotopes of (must match the definition in Masslist() with the compound order given in Masslist.names_elements
+    Nr_isotopes: int
+        Nr of isotopes you want to produce (in this case 3) has to fit to the structure of this function (to add isotopes check the instruction below)
+    nr_elements_masslistproposed: int
+        In the Masslist() a number of elements in the masslist are proposed (noramlly 8 if you add a new element you want to suggestion it will be one more.
+
+    Returns
+    -------
+    list of np.arrays:
+        1st array: (1,Nr_isotopes)
+            Masses of isotopes
+        2nd array: (1,Nr_isotopes,nr_elements_masslistproposed)
+            Element numbers of the isotopes
+    dict:
+        keys: "IsotopicAbundance" : array: (1,Nr_isotopes) with isotopic abundances
+
     to add a new Isotope add another block of the following:
     1) change Nr_isotopes in Masslist() to Nr_isotopes+1
     2) add an Isotope element the same that you would do with a normal element (name it eg. O17)
@@ -32,7 +53,9 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
         Isotope_Elemental_compositions[0,:] = element_composition - [1 if i == x else 0 for i in range(0,nr_elements)] + [1 if i == y else 0 for i in range(0,nr_elements)]
         x = position of element; y = position of isotope Subtract the element (eg. [1, 0, 0, 0, 0, 0, 0, 0] is a C) and add the Isotope (eg. [0, 1, 0, 0, 0, 0, 0, 0] is a C13)
 
+    [IsotopeMasses, Isotope_Elemental_compositions], {"IsotopicAbundance" : IsotopicAbundance}
     '''
+
     IsotopeMass = np.full(Nr_isotopes, np.nan)
     IsotopicAbundance  = np.full(Nr_isotopes, np.nan)
     Isotope_Elemental_compositions = np.full((Nr_isotopes,nr_elements_masslistproposed), np.nan)
@@ -58,7 +81,7 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
 
     return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
 
-def load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
+def _load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
     # here it is important, that the index in the isotopes is always the same as the index in the masslist
     Isotope_Elemental_compositions = np.full((masslist.masses.shape[0], Nr_isotopes, masslist.element_numbers.shape[1]), np.nan)
     IsotopeMasses = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
@@ -70,7 +93,7 @@ def load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
 
 
 #
-def load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses = True):
+def _load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses = True):
     Masses_elements = masses_elements
 
     Listofranges = [list(range(A[0], A[1] + 1)) for A in Mass_suggestions_ranges]
@@ -94,7 +117,38 @@ def load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses 
     return [Masses,Element_numbers],{"Mass_suggestions_ranges" : Mass_suggestions_ranges}
 
 
-class Data():
+class _Data():
+    '''
+    Basket object for Suggestions, Masslist and Isotopes (suggisomass) and all functions that alter these
+    -to add a new element to suggest, change the variables names_elements masses_elements mass_suggestions_ranges with the information on the compound
+    -to change sane mass rules, go to load_suggestions function (which compounds are suggested depending on some ratio eg. C:O ratio)
+    -to add a new isotope, follow the recipe in the make_isotope function
+
+    Parameters
+    ----------
+    Filename : str
+        The filepath of the _result file where the masslist is in
+
+    Attributes
+    ----------
+    element_numbers : np.array (-, Masslist.nr_elements)
+        Element numbers of suggisomass entries
+    masses: np.array (-)
+        masses of suggisomass entries. If the Data are isotopes the dimensions have to fit to (len(Masslist.masslist.masses),Nr_isotopes )
+    mass_suggestions_ranges: list of tuples (1,nr_elements)
+        For each element give a range of which number you want to include in the suggestions. Only filled suggestions
+    isotopic_abundance: np.array (len(Masslist.masslist.masses), Masslist.Nr_isotopes)
+        Isotopic abundances
+    mass_coefficients: np.array (len(Masslist.masslist.masses))
+        holds the mass coefficients calculated by the local fits
+    current_lines: list
+        Holds all InfiniteLine_Mass objects that are currently plotted
+    current_element_names: list
+        Element numbers of current InfiniteLine_Mass objects
+
+    '''
+
+
     def __init__(self,Masses,Element_numbers,Mass_suggestions_ranges = [], IsotopicAbundance = []):
         # initialize masslist
         self.element_numbers = Element_numbers
@@ -107,8 +161,51 @@ class Data():
 
 
 class Masslist():
-    # to add a new element chnage the following 4 variables with the information on the compound, to change sane mass rules go to load_suggestions function (which compounds are suggested depending on some ratio eg. C:O ratio)
-    # to add a new isotope follow the recipe in the make_isotope function
+    '''
+    Basket object for Suggestions, Masslist and Isotopes and all functions that alter these
+    -to add a new element to suggest, change the variables names_elements masses_elements mass_suggestions_ranges with the information on the compound
+    -to change sane mass rules, go to load_suggestions function (which compounds are suggested depending on some ratio eg. C:O ratio)
+    -to add a new isotope, follow the recipe in the make_isotope function
+
+    Parameters
+    ----------
+    Filename : str
+        The filepath of the _result file where the masslist is in
+
+    Attributes (only the most important)
+    ----------
+    suggestions : _Data
+        _Data object with all information on masssuggestions
+    masslist: _Data
+        _Data object with all information on masslist masses
+    isotopes: _Data
+        _Data object with all information on isotopes
+    names_elements: list (1,nr_elements)
+        names of elements you want to suggest
+    masses_elements: list (1,nr_elements)
+        Masses of elements defined in names_elements in the same order
+    order_of_letters: list (1,nr_elements)
+        When giving a name string you define here how the letter of names_elements is reordered in the name string
+    mass_suggestions_ranges: list of tuples (1,nr_elements)
+        For each element give a range of which number you want to include in the suggestions
+    isotopes_range_back: int
+        For the calculation of the mass coefficients for the local fit define here how many unit masses back you want to include isotopes
+    nr_isotopes: int
+        How many isotopes do you incorporate
+    currently_hovered: list
+        holds the InfiniteLineMass objects when you hover over them
+
+
+    Methods
+    ----------
+    reinit
+    add_suggestion_to_sugglist
+    add_mass_to_masslist
+    delete_mass_from_masslist
+    redo_qlist
+
+    '''
+
     names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S"]
     order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
     masses_elements = np.array([12,
@@ -127,17 +224,42 @@ class Masslist():
     nr_elements = len(names_elements)
     def __init__(self, Filename):
         self.filename = Filename
-        args, kwargs = load_suggestions(self.mass_suggestions_ranges, masses_elements = self.masses_elements)
-        self.suggestions = Data(*args, **kwargs)
-        self.masslist = Data(*load_masslist(Filename, self.nr_elements))
-        args, kwargs = load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
-        self.isotopes = Data(*args, **kwargs)
+        args, kwargs = _load_suggestions(self.mass_suggestions_ranges, masses_elements = self.masses_elements)
+        self.suggestions = _Data(*args, **kwargs)
+        self.masslist = _Data(*_load_masslist(Filename, self.nr_elements))
+        args, kwargs = _load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
+        self.isotopes = _Data(*args, **kwargs)
         self.currently_hovered = []
 
     def reinit(self, Filename):
+        '''Reinitiate the basket object
+
+        Parameters
+        ----------
+        Filename : str
+            The filepath of the _result file where the masslist is in
+
+        Returns
+        -------
+        None
+        '''
         self.__init__(Filename)
 
-    def add_suggestion_to_sugglist(self, compoundelements, parent):
+    def add_suggestion_to_sugglist(self, parent, compoundelements):
+        '''Add a new compound to the suggestion _Data object, redraw the InfinitLineMass objects, so that it will be shown on the plot and zoom to the mass of the compound
+
+        Parameters
+        ----------
+        parent : object
+            Mainwindow object where the Line will be drawn
+        compoundelements : np.array(Masslist.nr_compounds)
+            Has to fit the notation established in Masslist()
+
+        Returns
+        -------
+        None
+        '''
+        xlims, ylims = parent.vb.viewRange()
         if len(compoundelements) == len(self.names_elements):
             mass = np.sum(np.array(compoundelements) * self.masses_elements)
             if compoundelements not in self.suggestions.element_numbers.tolist():
@@ -150,15 +272,27 @@ class Masslist():
                 self.suggestions.masses = self.suggestions.masses[sortperm]
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
-                pyqtgraph_objects.redraw_vlines(parent)
+                pyqtgraph_objects.redraw_vlines(parent, xlims)
             else:
                 print("Compound already in suggestions list")
-            xlims, ylims = parent.vb.viewRange()
             parent.vb.setXRange(xlims[0], xlims[0]+0.2)
             parent.jump_to_mass(float(mass))
 
-    def add_mass_to_masslist(self, mass, parent):
-        # add to masslist
+    def add_mass_to_masslist(self, parent, mass):
+        '''Add the given mass to the masslist _Data object delete the corresponding mass in the suggestion _Data object and redraw the InfinitLineMass objects, so that it will be shown on the plot.
+
+        Parameters
+        ----------
+        parent : object
+            Mainwindow object where the Line will be drawn
+        mass : float
+            mass of the compound you want to add. If the mass is also in the suggestions you will also get element numbers
+
+        Returns
+        -------
+        None
+        '''
+
         if mass not in self.masslist.masses:
             self.masslist.masses = np.append(self.masslist.masses,mass)
             if mass in self.suggestions.masses:
@@ -191,11 +325,24 @@ class Masslist():
             index_of_deletion = np.where(self.suggestions.masses == mass)
             self.suggestions.masses = np.delete(self.suggestions.masses, index_of_deletion)
             self.suggestions.element_numbers = np.delete(self.suggestions.element_numbers, index_of_deletion, axis = 0)
-
-            pyqtgraph_objects.redraw_vlines(parent)
+            xlims, ylims = parent.vb.viewRange()
+            pyqtgraph_objects.redraw_vlines(parent,xlims)
             self.redo_qlist(parent.masslist_widget)
 
-    def delete_mass_from_masslist(self, mass, parent):
+    def delete_mass_from_masslist(self, parent, mass):
+        '''Delete the given mass in the masslist _Data object, add the corresponding mass to the suggestion _Data object, if there are any element number attached to it and redraw the InfinitLineMass objects, so that it will be shown on the plot.
+
+        Parameters
+        ----------
+        parent : object
+            Mainwindow object where the Line will be drawn
+        mass : float
+            mass of the compound you want to delete
+
+        Returns
+        -------
+        None
+        '''
         if mass in self.masslist.masses:
             #delete in masses
             index_of_deletion = np.where(self.masslist.masses == mass)
@@ -211,24 +358,76 @@ class Masslist():
             self.isotopes.masses = np.delete(self.isotopes.masses,index_of_deletion,axis = 0)
             self.isotopes.isotopic_abundance = np.delete(self.isotopes.isotopic_abundance,index_of_deletion,axis = 0)
             self.isotopes.element_numbers = np.delete(self.isotopes.element_numbers,index_of_deletion,axis = 0)
-            pyqtgraph_objects.redraw_vlines(parent)
+            xlims, ylims = parent.vb.viewRange()
+            pyqtgraph_objects.redraw_vlines(parent,xlims)
 
     def redo_qlist(self,qlist):
+        '''Update the List on the right side of the Plot
+
+        Parameters
+        ----------
+        qlist : QtWidgets.QListWidget
+
+        Returns
+        -------
+        None
+        '''
         qlist.clear()
         for mass,element_numbers in zip(self.masslist.masses, self.masslist.element_numbers):
             qlist.addItem(str(round(mass,6)) + "  " + get_names_out_of_element_numbers(element_numbers))
 
 class Spectrum():
+    '''
+    Basket object for the meanspectrum, min and max spectrum, subspectra, the local fits and all function that alter these.
+
+    Parameters
+    ----------
+    Filename : str
+        The filepath of the _result file where the spectra are in
+
+    Attributes (only the most important)
+    ----------
+    sum_specs: np.array(number of timestamps in _result file, nr of subspectra)
+        Baseline corrected Subspectra
+    spectrum: np.array(number of timestamps in _result file)
+        Baseline corrected mean spectrum
+    spectrum_max: np.array(number of timestamps in _result file)
+        Baseline corrected maximum spectrum
+    spectrum_max: np.array(number of timestamps in _result file)
+        Baseline corrected minimum spectrum
+    massaxis: np.array(number of massaxis points in _result file)
+
+    peakshape: np.array(nr of mean peakshapes, 401)
+        average peakshapes over some massrange out of _result file
+    peakshapemiddle: np.array(nr of mean peakshapes)
+        middle of massrange for the peakshapes
+    peakshapeborders: np.array(nr of mean peakshapes+ 1)
+        boarders of massranges for the peakshapes
+    current_local_fit: list of PlotItem
+        current Local fit
+    current_local_fit_masses: list
+        masses influencing the current local fit
+
+
+    Methods
+    ----------
+    make_singlepeak
+    get_mass_coefficients
+
+    '''
+
     def __init__(self, filename):
         with h5py.File(filename, "r") as f:
             self.sum_specs = f["SumSpecs"][()]
-            self.baselines = f["BaseLines"][()]
-            self.sum_specs = self.sum_specs - self.baselines
+            self._baselines = f["BaseLines"][()]
+            self.sum_specs = self.sum_specs - self._baselines
             self.spectrum = f["AvgSpectrum"][()]
-            self.avg_baseline = f["AvgBaseline"][()]
-            self.spectrum = self.spectrum - self.avg_baseline
+            self._avg_baseline = f["AvgBaseline"][()]
+            self.spectrum = self.spectrum - self._avg_baseline
             self.spectrum_max = f["SumSpecMax"][()]
+            self.spectrum_max = self.spectrum_max- self._avg_baseline
             self.spectrum_min = f["SumSpecMin"][()]
+            self.spectrum_min = self.spectrum_min- self._avg_baseline
             self.massaxis = f["MassAxis"][()]
             self.peakshape = f["MassDepPeakshape"][()]
             self.peakshapemiddle = f["MassDepPeakshapeCenterMasses"][()]#
@@ -237,6 +436,23 @@ class Spectrum():
         self.current_local_fit_masses = []
 
     def make_singlepeak(self, mass, massaxis_this_zoom):
+        '''Make a single peak around a given mass with given massaxis points and interpolated peakshape to the given mass
+
+        Parameters
+        ----------
+        mass: float
+            Mass the maximum of the peakshape is around
+        massaxis_this_zoom: np.array()
+            Massaxis points to interpolate the single peak to
+
+        Returns
+        -------
+        massaxis_this_zoom: np.array()
+            same as input
+        peakshape_interpolated: np.array(massaxis_this_zoom.shape)
+            new peakshape around mass
+
+        '''
         peakshape_index = int(
             [i for i in range(len(self.peakshapeborders) - 1) if self.peakshapeborders[i] < mass < self.peakshapeborders[i + 1]][0])
         ind_peak, deviation = self._find_nearest(self.massaxis, mass)
@@ -271,6 +487,28 @@ class Spectrum():
         return peakshapeborders
 
     def get_mass_coefficients(self, range, ml):
+        '''Make singlepeaks for all masslist masses and isotopes in range, recalculate the coefficient for the best fit
+
+        Parameters
+        ----------
+        range: tupel
+            X- range of current view
+        ml: Masslist object
+            The Masslist object defined in MainWindow
+
+        Returns
+        -------
+        massaxis_in_range: tupel
+            same as input
+        local_fit: np.array()
+            summed up all singlepeaks of masslist masses and isotopes scaled by their coefficients
+        coefficients: np.array(nr_of_masses_in_range)
+            All coefficients influencing the current view
+        A: np.array(local_fit,nr_of_masses_in_range)
+            All single peak fits => A*coefficient gives a matrix which has all scaled single peaks in its columns
+
+        '''
+
         print("recalculate local fit")
         isotopes_range = ml.isotopes_range_back  # how many isotopes back we want to include
         margin = 0.5
@@ -314,12 +552,22 @@ class Spectrum():
 
 def get_names_out_of_element_numbers(compound_array):
     # only if any compounds are in compound array give a string
-    '''
-    compound_array: np array with shape (nr_elements, nr_compounds)
+    '''Get the compound name out of a compound array
 
-    return  string if compound_array is (nr_elements, 1) with compound name
-            list else with compound names
+    Parameters
+    ----------
+    compound_array : np.array (nr_elements, nr_compounds)
+        corresponding to the rules used in Masslist object
+
+    Returns
+    -------
+    compoundname_list:
+        str if compound_array is (nr_elements, 1)
+            compound name
+        list if (nr_elements, nr_compounds)
+            compound names
     '''
+
     compoundname_list = []
 
     for compound in compound_array:

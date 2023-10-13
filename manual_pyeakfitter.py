@@ -239,7 +239,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if np.diff(xlims) > 1.1:
             pyqtgraph_objects.remove_all_vlines(self)
         else:
-            pyqtgraph_objects.redraw_vlines(self)
+            pyqtgraph_objects.redraw_vlines(self, xlims)
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
             def to_worker():
@@ -288,7 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         xlims, ylims = self.vb.viewRange()
         if ev.double() and np.diff(xlims) < 1.1:
             xpos = self.vb.mapToView(ev.pos()).x()
-            self.ml.add_mass_to_masslist(xpos,self)
+            self.ml.add_mass_to_masslist(self, xpos)
             pyqtgraph_objects.redraw_localfit(self,xlims)
 
 
@@ -301,7 +301,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
             print(self.ml.currently_hovered.value())
-            self.ml.delete_mass_from_masslist(self.ml.currently_hovered.value(), self)
+            self.ml.delete_mass_from_masslist(self, elf.ml.currently_hovered.value())
             xlims, ylims = self.vb.viewRange()
             pyqtgraph_objects.redraw_localfit(self, xlims)
 
