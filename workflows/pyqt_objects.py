@@ -9,15 +9,12 @@ def open_file(parent):
     dialog = QtWidgets.QFileDialog()
     filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
     parent.filename = filepath
-    print(parent.graphWidget.allChildItems())
     if parent.file_loaded:
-        parent.graphWidget.clear()
+        print("remove old plot stuff")
+        pyqtgraph_objects.remove_all_plot_items(parent)
     parent.init_basket_objects()
     parent.init_UI_file_loaded()
-
     parent.init_plots()
-
-    print(parent.graphWidget.allChildItems())
     parent.file_loaded = True
 
 class QHSeparationLine(QtWidgets.QFrame):

@@ -110,6 +110,10 @@ def remove_all_vlines(parent):
     parent.ml.isotopes.current_lines = remove_plot_items(parent, parent.ml.isotopes.current_lines)
     parent.sp.current_local_fit_masses = remove_plot_items(parent, parent.sp.current_local_fit)
 
+def remove_all_plot_items(parent):
+    # used: https://www.geeksforgeeks.org/pyqtgraph-getting-all-child-items-of-graph-item/
+    for item in parent.graphWidget.allChildItems():
+        parent.graphWidget.removeItem(item)
 def redraw_subspec(parent):
     numbersubspec = int(parent.slider.value())
     if parent.plot_settings["show_plots"][3]:
