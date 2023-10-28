@@ -59,7 +59,7 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
     IsotopeMass = np.full(Nr_isotopes, np.nan)
     IsotopicAbundance  = np.full(Nr_isotopes, np.nan)
     Isotope_Elemental_compositions = np.full((Nr_isotopes,nr_elements_masslistproposed), np.nan)
-    nr_elements = len(element_composition)
+    nr_elements = len(element_composition)#.shape[]
     # make isotopes see: https://www.chem.ualberta.ca/~massspec/atomic_mass_abund.pdf
     if element_composition[0] > 0:  # if the element contains carbons we make an isotope
         IsotopeMass[0] = mass - 12 + 13.003355  # contains one isotope
@@ -349,8 +349,12 @@ class Masslist():
 
             #first append it to suggestions only if we have a compound formual attached to it
             if np.any(self.masslist.element_numbers[index_of_deletion]):
-                self.suggestions.masses = np.append(self.suggestions.masses, mass)
-                self.suggestions.element_numbers = np.append(self.suggestions.element_numbers, self.masslist.element_numbers[index_of_deletion], axis=0)
+                if mass not in self.suggestions.masses:
+                    self.suggestions.masses = np.append(self.suggestions.masses, mass)
+                    self.suggestions.element_numbers = np.append(self.suggestions.element_numbers, self.masslist.element_numbers[index_of_deletion], axis=0)
+                    sortperm = np.argsort(self.suggestions.masses)
+                    self.suggestions.masses = self.masslist.masses[sortperm]
+                    self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
             print("delete mass ", mass, ",", get_names_out_of_element_numbers(self.masslist.element_numbers[index_of_deletion].flatten()) ,"from masslist")
             self.masslist.masses = np.delete(self.masslist.masses, index_of_deletion)
