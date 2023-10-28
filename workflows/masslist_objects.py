@@ -360,6 +360,7 @@ class Masslist():
             self.isotopes.element_numbers = np.delete(self.isotopes.element_numbers,index_of_deletion,axis = 0)
             xlims, ylims = parent.vb.viewRange()
             pyqtgraph_objects.redraw_vlines(parent,xlims)
+            self.redo_qlist(parent.masslist_widget)
 
     def redo_qlist(self,qlist):
         '''Update the List on the right side of the Plot

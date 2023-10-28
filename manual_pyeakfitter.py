@@ -72,6 +72,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # plot widget for the verticalLayout2
         self.graphWidget = pg.PlotWidget()
+
+
         self.verticalLayout2.addWidget(self.graphWidget)
 
         self.slider = QtWidgets.QSlider(Qt.Horizontal)
@@ -210,6 +212,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
         self.graphWidget.setBackground(self.plot_settings["background_color"])
+        self.graphWidget.setLabel('bottom', "m/z [Th]")
+        self.graphWidget.setLabel('left', "Signal [cps]")
+        self.graphWidget.setLogMode(y=True)
         self.graphWidget.addLegend()
         # make bg plots
         pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])

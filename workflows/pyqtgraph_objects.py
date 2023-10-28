@@ -22,13 +22,13 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movabl
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
             if np.any(element_numbers):
                 sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
-                                                angle=90, hoverPen={"color": (100,0,0),"width": 2}, label= compound_name,
+                                                angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
                                                            "anchors": [(0, 0), (0, 0)]},deletable=deletable)
             else:
                 sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(parent.plot_settings["vert_lines_color_masslist_without_composition"], width=width), hover = hover, movable= movable,
-                                                angle=90, hoverPen={"color": (100,0,0),"width": 2}, label= compound_name,
+                                                angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
                                                            "anchors": [(0, 0), (0, 0)]},deletable=deletable)
@@ -235,8 +235,6 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                     if item.text().split()[0] == str(self.value()):
                         # Set the current item and scroll to it
                         self.parent.masslist_widget.setCurrentItem(item)
-                        item.setBackground(QtGui.QColor(255, 0, 0))  # Red background color
-
                         return  # Exit the loop if found
         else:
             self.setMouseHover(False)
@@ -244,8 +242,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 self.parent.ml.currently_hovered = []
             for index in range(self.parent.masslist_widget.count()):
                 item = self.parent.masslist_widget.item(index)
-                if item.text().split()[0] == str(self.value()):
-                    item.setBackground(QtGui.QColor(255, 255, 255))  # Red background color
+
 
     def mouseClickEvent(self, ev):
         self.sigClicked.emit(self, ev)
