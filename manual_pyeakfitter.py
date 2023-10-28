@@ -147,10 +147,10 @@ class MainWindow(QtWidgets.QMainWindow):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.Masslist(self.filename)
-        self.plot_settings = {"vert_lines_color_suggestions": 0.5,
+        self.plot_settings = {"vert_lines_color_suggestions": (97, 99, 102,70),
                               "vert_lines_color_masslist": (38, 135, 20),
                               "vert_lines_color_masslist_without_composition": (13, 110, 184),
-                              "vert_lines_color_isotopes": (252, 3, 244, 100), # RGB tubel and last number gives the transparency (from 0 to 255)
+                              "vert_lines_color_isotopes": (252, 3, 244, 70), # RGB tubel and last number gives the transparency (from 0 to 255)
                               "vert_lines_width_suggestions": 1,
                               "vert_lines_width_masslist": 2,
                               "vert_lines_width_isotopes": 1.5,

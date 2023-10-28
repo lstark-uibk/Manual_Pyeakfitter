@@ -20,6 +20,12 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movabl
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
+            #print in layer suggstions<isotopes<masslist
+            if mass in parent.ml.suggestions.masses:
+                z = 0
+            elif mass in parent.ml.isotopes.masses:
+                z = 500
+            else: z = 1000
             if np.any(element_numbers):
                 sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
                                                 angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
@@ -32,6 +38,7 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movabl
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
                                                            "anchors": [(0, 0), (0, 0)]},deletable=deletable)
+            sugisomass_line.setZValue(z)
             parent.graphWidget.addItem(sugisomass_line)
             massisosugg.current_lines.append(sugisomass_line)
 
@@ -229,19 +236,20 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 self.parent.ml.currently_hovered = self
             if self.value() in self.parent.ml.masslist.masses:
                 #jumpt to the hoovered mass in qlist
-                print(f"I jump to mass {self.value()} in the qlist")
+                # if the current Item in qlist is not the hoovered mass, change it
+                # if self.parent.masslist_widget.currentItem().text().split()[0] != str(round(self.value(),6)):
                 for index in range(self.parent.masslist_widget.count()):
                     item = self.parent.masslist_widget.item(index)
-                    if item.text().split()[0] == str(self.value()):
+                    if item.text().split()[0] == str(round(self.value(),6)):
                         # Set the current item and scroll to it
+                        print(f"I jump to mass {self.value()} in the qlist")
                         self.parent.masslist_widget.setCurrentItem(item)
-                        return  # Exit the loop if found
+                        break  # Exit the loop if found
         else:
             self.setMouseHover(False)
             if self.delatable:
                 self.parent.ml.currently_hovered = []
-            for index in range(self.parent.masslist_widget.count()):
-                item = self.parent.masslist_widget.item(index)
+
 
 
     def mouseClickEvent(self, ev):
