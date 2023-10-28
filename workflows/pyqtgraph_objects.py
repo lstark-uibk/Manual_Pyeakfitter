@@ -2,6 +2,7 @@ import pyqtgraph as pg
 from pyqtgraph import functions as fn
 from pyqtgraph.Qt import QtCore
 import workflows.masslist_objects as mf
+import PyQt5.QtGui as QtGui
 import numpy as np
 
 def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movable = False, deletable = False):
@@ -226,10 +227,25 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             self.setMouseHover(True)
             if self.delatable:
                 self.parent.ml.currently_hovered = self
+            if self.value() in self.parent.ml.masslist.masses:
+                #jumpt to the hoovered mass in qlist
+                print(f"I jump to mass {self.value()} in the qlist")
+                for index in range(self.parent.masslist_widget.count()):
+                    item = self.parent.masslist_widget.item(index)
+                    if item.text().split()[0] == str(self.value()):
+                        # Set the current item and scroll to it
+                        self.parent.masslist_widget.setCurrentItem(item)
+                        item.setBackground(QtGui.QColor(255, 0, 0))  # Red background color
+
+                        return  # Exit the loop if found
         else:
             self.setMouseHover(False)
             if self.delatable:
                 self.parent.ml.currently_hovered = []
+            for index in range(self.parent.masslist_widget.count()):
+                item = self.parent.masslist_widget.item(index)
+                if item.text().split()[0] == str(self.value()):
+                    item.setBackground(QtGui.QColor(255, 255, 255))  # Red background color
 
     def mouseClickEvent(self, ev):
         self.sigClicked.emit(self, ev)

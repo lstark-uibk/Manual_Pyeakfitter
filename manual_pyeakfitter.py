@@ -79,7 +79,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout2.addWidget(self.slider)
 
         # other widgets for the verticalLayout1
-        self.button = QtWidgets.QPushButton("Print suggestions in view range")
+        # self.button = QtWidgets.QPushButton("Print suggestions in view range")
+        self.button = QtWidgets.QPushButton("Manually add Element")
 
         self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
 
@@ -123,9 +124,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.changemassranges = QtWidgets.QAction("Change Element ranges", self)
         self.settingsMenubar.addAction(self.changemassranges)
-
         self.addElement = QtWidgets.QAction("Manually add Element", self)
-        self.settingsMenubar.addAction(self.addElement)
+        self.manually_add_element = menubar.addAction(self.addElement)
 
         helpwindow = po.HelpWindow(self)
         helpaction = QtWidgets.QAction("Help", self)
@@ -176,7 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
         self.slider.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
         # print suggestion list button
-        self.button.clicked.connect(self.printsugg)
+        # self.button.clicked.connect(self.printsugg)
         # save masslist button
         self.save_button.clicked.connect(self.save_masslist_to_csv)
         # masslist shown on left
@@ -192,6 +192,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.changemassranges.triggered.connect(changemassrangesWindow.show)
         # add new element action in menubar
         addElementWindow = po.AddnewElement(self)
+        # print add elements
+        self.button.clicked.connect(addElementWindow.show)
         self.addElement.triggered.connect(addElementWindow.show)
 
         self.plotsettings_window = po.PlotSettingsWindow(self)
