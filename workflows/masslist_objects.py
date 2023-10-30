@@ -4,6 +4,7 @@ import h5py
 import itertools
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import timeit
+import re
 
 def _load_masslist(Filename, nr_elements_masslistproposed):
     with h5py.File(Filename, "r") as f:
@@ -602,5 +603,49 @@ def get_names_out_of_element_numbers(compound_array):
 
     return compoundname_list
 
+
+def get_element_numbers_out_of_names(namestring):
+    '''Get the compound name out of a compound array
+
+    Parameters
+    ----------
+    namestring : str characters and numbers in any order
+
+    Returns
+    -------
+    mass: float
+        mass of the compound
+    element_numbers: np.array (nr_elemets)
+
+
+    '''
+    charlist = re.split(r'([a-zA-Z]\d+)|([a-zA-Z](?=[a-zA-Z]))', namestring)
+    charlist = [part for part in charlist if part]
+
+    elements = np.chararray(len(charlist))
+    numbers = np.zeros(len(charlist))
+    for index, el_num in enumerate(charlist):
+        if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
+            splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
+            splitted = [part for part in splitted if part]
+            element, number = splitted
+            elements[index] = element
+            numbers[index] = number
+        else:  # Character followed by another character
+            elements[index] = el_num
+            numbers[index] = 1
+
+    elementsinstring_lower = np.array([x.lower() for x in elements], dtype = 'str')
+    names_elements = Masslist.names_elements
+    compound_array = np.array([0] * len(names_elements))
+    for index,element in enumerate(names_elements):
+        #make it lower, so that we have more freedom in writing
+        element_lower = element.lower()
+        if np.any(element_lower == elementsinstring_lower):
+            compound_array[index] = numbers[element_lower == elementsinstring_lower]
+
+    mass = np.sum(compound_array*Masslist.masses_elements)
+
+    return mass, compound_array
 
 

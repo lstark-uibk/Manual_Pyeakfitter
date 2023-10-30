@@ -63,12 +63,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout1 = QtWidgets.QVBoxLayout()  #layout on the left with the masslist, and other stuff
         self.verticalLayout2 = QtWidgets.QVBoxLayout()  #laout on the right with the graph
         self.jump_to_mass_layout = QtWidgets.QHBoxLayout()
+        self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
+
 
         self.horizontalLayout.addLayout(self.verticalLayout1)
         self.horizontalLayout.addLayout(self.verticalLayout2)
         self.horizontalLayout.setStretch(0, 1)
         self.horizontalLayout.setStretch(1,7)
         self.verticalLayout1.addLayout(self.jump_to_mass_layout)
+        self.verticalLayout1.addLayout(self.jump_to_compound_layout)
 
         # plot widget for the verticalLayout2
         self.graphWidget = pg.PlotWidget()
@@ -93,8 +96,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_jump_mass = QtWidgets.QLabel("Jump to mass: ")
         self.jump_to_mass_input = QtWidgets.QLineEdit()
         self.jump_to_mass_input.setValidator(QtGui.QDoubleValidator(0., 500., 4))
+        self.label_jump_compound = QtWidgets.QLabel("Jump to compound (eg. H2O): ")
+        self.jump_to_compound_input = QtWidgets.QLineEdit()
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
+        self.jump_to_compound_layout.addWidget(self.label_jump_compound)
+        self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
 
 
         # create menu
@@ -186,6 +193,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
+        self.jump_to_compound_input.textChanged.connect(self.jump_to_compound)
 
 
         #menubar stuff
@@ -288,8 +296,12 @@ class MainWindow(QtWidgets.QMainWindow):
         xrange = xlims[1] - xlims[0]
         target_mass = mass
         newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
-        self.vb.setXRange(*newxlims)
+        self.vb.setXRange(*newxlims, padding = 0)
 
+    def jump_to_compound(self,compoundstring):
+        mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
+        print(mass, type(mass))
+        self.jump_to_mass(float(mass))
     def mouse_double_click_on_empty(self, ev):
         # ev pos is the position of the mouseclick in pixel relative to the window, map it onto the view values
         xlims, ylims = self.vb.viewRange()
@@ -308,7 +320,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
             print(self.ml.currently_hovered.value())
-            self.ml.delete_mass_from_masslist(self, elf.ml.currently_hovered.value())
+            self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
             xlims, ylims = self.vb.viewRange()
             pyqtgraph_objects.redraw_localfit(self, xlims)
 
