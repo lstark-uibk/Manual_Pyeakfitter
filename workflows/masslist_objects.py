@@ -636,22 +636,37 @@ def get_element_numbers_out_of_names(namestring):
 
     '''
     charlist = re.split(r'([a-zA-Z]\d+)|([a-zA-Z](?=[a-zA-Z]))', namestring)
-    charlist = [part for part in charlist if part]
+    charlist = np.array([part for part in charlist if part],dtype="str")
+    if (charlist == "+").any():
+        charlist = charlist[~(charlist == "+")]
+        ion = True
 
-    elements = np.chararray(len(charlist))
-    numbers = np.zeros(len(charlist))
+    elements = np.array([""]*charlist.size, dtype = "str")
+    numbers = np.zeros(charlist.size)
     for index, el_num in enumerate(charlist):
         if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
             splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
             splitted = [part for part in splitted if part]
             element, number = splitted
-            elements[index] = element
-            numbers[index] = number
+            number = int(number)
+            if element not in elements: #if the element is not already considered
+                elements[index] = element
+                numbers[index] = number
+            else: #takes care of double writing eg C7H8NH4+
+                numbers[element == elements] += number
         else:  # Character followed by another character
             elements[index] = el_num
             numbers[index] = 1
 
+    if ion:
+        elements = np.append(elements,"H+")
+        numbers = np.append(numbers,1)
+        number_H_mask = np.array([x.lower() for x in elements], dtype='str') == "h"
+        if numbers[number_H_mask] > 0: # if the H number is more than 0
+            numbers[number_H_mask] -= 1
+
     elementsinstring_lower = np.array([x.lower() for x in elements], dtype = 'str')
+
     names_elements = Masslist.names_elements
     compound_array = np.array([0] * len(names_elements))
     for index,element in enumerate(names_elements):
