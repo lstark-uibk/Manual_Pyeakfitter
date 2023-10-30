@@ -1,5 +1,7 @@
 import PyQt5.QtGui as QtGui
 import PyQt5.QtWidgets as QtWidgets
+import numpy as np
+
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 from PyQt5.QtCore import Qt
 
@@ -103,6 +105,7 @@ class AddnewElement(QtWidgets.QMainWindow):
                 compoundarray[index] = 0
             else:
                 compoundarray[index] = int(self.compound_inquiry[compound].text())
+        compoundarray = np.array(compoundarray)
         self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
 
     def closeWindow(self):

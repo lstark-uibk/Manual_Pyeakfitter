@@ -3,6 +3,8 @@ import math
 import h5py
 import itertools
 import workflows.pyqtgraph_objects as pyqtgraph_objects
+import pyqtgraph as pg
+import PyQt5.QtCore as QtCore
 import timeit
 import re
 
@@ -253,7 +255,7 @@ class Masslist():
         ----------
         parent : object
             Mainwindow object where the Line will be drawn
-        compoundelements : np.array(Masslist.nr_compounds)
+        compoundelements : list
             Has to fit the notation established in Masslist()
 
         Returns
@@ -263,7 +265,7 @@ class Masslist():
         xlims, ylims = parent.vb.viewRange()
         if len(compoundelements) == len(self.names_elements):
             mass = np.sum(np.array(compoundelements) * self.masses_elements)
-            if compoundelements not in self.suggestions.element_numbers.tolist():
+            if not (self.suggestions.element_numbers == compoundelements).all(axis=1).any():
                 # add to suggestion list
                 self.suggestions.element_numbers = np.vstack([self.suggestions.element_numbers,compoundelements])
                 self.suggestions.masses = np.append(self.suggestions.masses,mass)
@@ -274,10 +276,24 @@ class Masslist():
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
                 pyqtgraph_objects.redraw_vlines(parent, xlims)
+                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), hover = False, movable= False,
+                                                angle=90)
+
+                def aftertime():
+                    print("timer finished")
+                    parent.graphWidget.removeItem(highlight_line)
+                #add a highlight line and delet it after 2 seconds
+                parent.graphWidget.addItem(highlight_line)
+                self.timer = QtCore.QTimer()
+                self.timer.setSingleShot(True)
+                self.timer.setInterval(2000)
+                self.timer.timeout.connect(aftertime)
+                self.timer.start()
             else:
                 print("Compound already in suggestions list")
             parent.vb.setXRange(xlims[0], xlims[0]+0.2)
             parent.jump_to_mass(float(mass))
+
 
     def add_mass_to_masslist(self, parent, mass):
         '''Add the given mass to the masslist _Data object delete the corresponding mass in the suggestion _Data object and redraw the InfinitLineMass objects, so that it will be shown on the plot.

@@ -96,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_jump_mass = QtWidgets.QLabel("Jump to mass: ")
         self.jump_to_mass_input = QtWidgets.QLineEdit()
         self.jump_to_mass_input.setValidator(QtGui.QDoubleValidator(0., 500., 4))
-        self.label_jump_compound = QtWidgets.QLabel("Jump to compound (eg. H2O): ")
+        self.label_jump_compound = QtWidgets.QLabel("Jump to compound: ")
         self.jump_to_compound_input = QtWidgets.QLineEdit()
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
@@ -300,8 +300,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def jump_to_compound(self,compoundstring):
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
-        print(mass, type(mass))
         self.jump_to_mass(float(mass))
+        if not (self.ml.suggestions.element_numbers == compound).all(axis = 1).any():
+            self.ml.add_suggestion_to_sugglist(self,compound)
     def mouse_double_click_on_empty(self, ev):
         # ev pos is the position of the mouseclick in pixel relative to the window, map it onto the view values
         xlims, ylims = self.vb.viewRange()
