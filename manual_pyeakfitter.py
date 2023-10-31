@@ -266,7 +266,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
             def to_worker():
-                print("because I scrolled I redraw local fit")
                 pyqtgraph_objects.redraw_localfit(self,xlims)
             worker = Worker(to_worker)
             self.threadpool.start(worker)
@@ -307,7 +306,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb.setXRange(*newxlims, padding = 0)
 
     def jump_to_compound(self,compoundstring):
-        print(compoundstring)
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
         self.jump_to_mass(float(mass))
         if not (self.ml.suggestions.element_numbers == compound).all(axis=1).any():
@@ -330,7 +328,6 @@ class MainWindow(QtWidgets.QMainWindow):
             xlims, ylims = self.vb.viewRange()
             self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
-            print(self.ml.currently_hovered.value())
             self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
             xlims, ylims = self.vb.viewRange()
             pyqtgraph_objects.redraw_localfit(self, xlims)

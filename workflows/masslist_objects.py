@@ -288,8 +288,8 @@ class Masslist():
                 parent.graphWidget.addItem(highlight_line)
 
             else:
-                print("Compound already in suggestions list")
-
+                # print("Compound already in suggestions list")
+                pass
 
 
     def add_mass_to_masslist(self, parent, mass):
@@ -502,7 +502,6 @@ class Spectrum():
             peakshape_this = np.empty(self.peakshape[peakshape_index].shape)
             for i in range(peakshape_this.size):
                 peakshape_this =np.append(peakshape_this, self.peakshape[i] * fact + self.peakshape[i+1] * (1 - fact))
-                print("interpolate the peakshape, between")
         peakshape_interpolated = np.interp(massaxis_this_zoom, peakshape_massaxis_this_mass, peakshape_this,left= 0, right= 0)
 
         return massaxis_this_zoom, peakshape_interpolated
@@ -555,10 +554,10 @@ class Spectrum():
         masslist_masses_in_range = ml.masslist.masses[masslist_mask]
         isotopes_in_range = ml.isotopes.masses[masslist_mask]
         isotopicabundance_in_range = ml.isotopes.isotopic_abundance[masslist_mask]
-        print("isotopes in range", isotopes_in_range)
+        # print("isotopes in range", isotopes_in_range)
 
         list_isotopes_in_range = np.hstack([masslist_masses_in_range[:, np.newaxis], isotopes_in_range])
-        print("mass and isotope in range", list_isotopes_in_range)
+        # print("mass and isotope in range", list_isotopes_in_range)
         A = np.empty((massaxis_in_range.size, masslist_masses_in_range.size))
 
         for i, iso_list_mass in enumerate(list_isotopes_in_range):
@@ -657,7 +656,6 @@ def get_element_numbers_out_of_names(namestring):
     elements = np.array([""]*charlist.size, dtype = "str")
     numbers = np.zeros(charlist.size)
     for index, el_num in enumerate(charlist):
-        print(el_num)
         if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
             splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
             splitted = [part for part in splitted if part]
