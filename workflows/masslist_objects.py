@@ -262,9 +262,14 @@ class Masslist():
         -------
         None
         '''
-        xlims, ylims = parent.vb.viewRange()
+
+
         if len(compoundelements) == len(self.names_elements):
             mass = np.sum(np.array(compoundelements) * self.masses_elements)
+            xlims, ylims = parent.vb.viewRange()
+            parent.vb.setXRange(xlims[0], xlims[0] + 0.2)
+            parent.jump_to_mass(float(mass))
+            
             if not (self.suggestions.element_numbers == compoundelements).all(axis=1).any():
                 # add to suggestion list
                 self.suggestions.element_numbers = np.vstack([self.suggestions.element_numbers,compoundelements])
@@ -279,20 +284,12 @@ class Masslist():
                 highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), hover = False, movable= False,
                                                 angle=90)
 
-                def aftertime():
-                    print("timer finished")
-                    parent.graphWidget.removeItem(highlight_line)
-                #add a highlight line and delet it after 2 seconds
+                parent.ml.suggestions.current_lines.append(highlight_line)
                 parent.graphWidget.addItem(highlight_line)
-                # self.timer = QtCore.QTimer()
-                # self.timer.setSingleShot(True)
-                # self.timer.setInterval(2000)
-                # self.timer.timeout.connect(aftertime)
-                # self.timer.start()
+
             else:
                 print("Compound already in suggestions list")
-            parent.vb.setXRange(xlims[0], xlims[0]+0.2)
-            parent.jump_to_mass(float(mass))
+
 
 
     def add_mass_to_masslist(self, parent, mass):
