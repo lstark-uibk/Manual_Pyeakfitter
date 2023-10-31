@@ -284,11 +284,11 @@ class Masslist():
                     parent.graphWidget.removeItem(highlight_line)
                 #add a highlight line and delet it after 2 seconds
                 parent.graphWidget.addItem(highlight_line)
-                self.timer = QtCore.QTimer()
-                self.timer.setSingleShot(True)
-                self.timer.setInterval(2000)
-                self.timer.timeout.connect(aftertime)
-                self.timer.start()
+                # self.timer = QtCore.QTimer()
+                # self.timer.setSingleShot(True)
+                # self.timer.setInterval(2000)
+                # self.timer.timeout.connect(aftertime)
+                # self.timer.start()
             else:
                 print("Compound already in suggestions list")
             parent.vb.setXRange(xlims[0], xlims[0]+0.2)
@@ -635,15 +635,18 @@ def get_element_numbers_out_of_names(namestring):
 
 
     '''
+    ion = False
+    if "+" in namestring:
+        ion = True
+        namestring = namestring.replace("+","")
+
     charlist = re.split(r'([a-zA-Z]\d+)|([a-zA-Z](?=[a-zA-Z]))', namestring)
     charlist = np.array([part for part in charlist if part],dtype="str")
-    if (charlist == "+").any():
-        charlist = charlist[~(charlist == "+")]
-        ion = True
 
     elements = np.array([""]*charlist.size, dtype = "str")
     numbers = np.zeros(charlist.size)
     for index, el_num in enumerate(charlist):
+        print(el_num)
         if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
             splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
             splitted = [part for part in splitted if part]
@@ -655,8 +658,12 @@ def get_element_numbers_out_of_names(namestring):
             else: #takes care of double writing eg C7H8NH4+
                 numbers[element == elements] += number
         else:  # Character followed by another character
-            elements[index] = el_num
-            numbers[index] = 1
+            if el_num not in elements: #if the element is not already considered
+                elements[index] = el_num
+                numbers[index] = 1
+            else: #takes care of double writing eg C7H8NH4+
+                numbers[el_num == elements] += 1
+
 
     if ion:
         elements = np.append(elements,"H+")
@@ -676,7 +683,6 @@ def get_element_numbers_out_of_names(namestring):
             compound_array[index] = numbers[element_lower == elementsinstring_lower]
 
     mass = np.sum(compound_array*Masslist.masses_elements)
-
     return mass, compound_array
 
 

@@ -3,7 +3,7 @@ import pandas as pd
 import pyqtgraph as pg
 import os
 from PyQt5.QtCore import *
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 import sys
 import workflows.masslist_objects as mo
 import workflows.pyqtgraph_objects as pyqtgraph_objects
@@ -173,6 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.spectrum_max_plot = []
         self.spectrum_min_plot = []
         self.subspec_plot = []
+        self.jumping_possible = True
 
 
     def init_UI_file_loaded(self):
@@ -193,7 +194,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
-        self.jump_to_compound_input.textChanged.connect(self.jump_to_compound)
+        self.timer_textchange = QtCore.QTimer()
+        self.timer_textchange.setSingleShot(True)
+        self.timer_textchange.setInterval(500)
+        def timerstart(event):
+            self.timer_textchange.timeout.connect(lambda: self.jump_to_compound(event))
+            self.timer_textchange.start()
+
+        self.jump_to_compound_input.textChanged.connect(timerstart)
 
 
         #menubar stuff
@@ -299,10 +307,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb.setXRange(*newxlims, padding = 0)
 
     def jump_to_compound(self,compoundstring):
+        print(compoundstring)
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
         self.jump_to_mass(float(mass))
-        if not (self.ml.suggestions.element_numbers == compound).all(axis = 1).any():
-            self.ml.add_suggestion_to_sugglist(self,compound)
+        if not (self.ml.suggestions.element_numbers == compound).all(axis=1).any():
+            self.ml.add_suggestion_to_sugglist(self, compound)
+
     def mouse_double_click_on_empty(self, ev):
         # ev pos is the position of the mouseclick in pixel relative to the window, map it onto the view values
         xlims, ylims = self.vb.viewRange()
