@@ -269,7 +269,7 @@ class Masslist():
             xlims, ylims = parent.vb.viewRange()
             parent.vb.setXRange(xlims[0], xlims[0] + 0.2)
             parent.jump_to_mass(float(mass))
-            
+
             if not (self.suggestions.element_numbers == compoundelements).all(axis=1).any():
                 # add to suggestion list
                 self.suggestions.element_numbers = np.vstack([self.suggestions.element_numbers,compoundelements])
@@ -437,8 +437,22 @@ class Spectrum():
 
     def __init__(self, filename):
         with h5py.File(filename, "r") as f:
-            self.sum_specs = f["SumSpecs"][()]
-            self._baselines = f["BaseLines"][()]
+            self.sum_specs_ds = f["SumSpecs"]
+            if self.sum_specs_ds.shape[0] > 100:
+                print("Too many subspectra, take only some")
+                n = int(round(self.sum_specs_ds.shape[0]/100))
+                nthrow = slice(None, None, 2)
+                self.sum_specs = self.sum_specs_ds[nthrow,:]
+            else:
+                self.sum_specs = self.sum_specs_ds[()]
+            self._baselines_ds = f["BaseLines"][()]
+            if self._baselines_ds.shape[0] > 100:
+                print("Too many subspectra, take only some")
+                n = int(round(self._baselines_ds.shape[0]/100))
+                nthrow = slice(None, None, 2)
+                self._baselines = self._baselines_ds[nthrow,:]
+            else:
+                self._baselines = self._baselines_ds[()]
             self.sum_specs = self.sum_specs - self._baselines
             self.spectrum = f["AvgSpectrum"][()]
             self._avg_baseline = f["AvgBaseline"][()]
