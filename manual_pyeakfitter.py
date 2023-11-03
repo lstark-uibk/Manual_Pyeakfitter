@@ -196,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
         self.jump_to_compound_button.pressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
-
+        self.jump_to_compound_input.returnPressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         #menubar stuff
         # change range action in menubar
         changemassrangesWindow = po.SelectMassRangeWindow(self)
