@@ -98,11 +98,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.jump_to_mass_input.setValidator(QtGui.QDoubleValidator(0., 500., 4))
         self.label_jump_compound = QtWidgets.QLabel("Jump to compound: ")
         self.jump_to_compound_input = QtWidgets.QLineEdit()
+        self.jump_to_compound_button = QtWidgets.QPushButton("OK")
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-
+        self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
 
         # create menu
         menubar = QtWidgets.QMenuBar()
@@ -194,15 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
-        self.timer_textchange = QtCore.QTimer()
-        self.timer_textchange.setSingleShot(True)
-        self.timer_textchange.setInterval(500)
-        def timerstart(event):
-            self.timer_textchange.timeout.connect(lambda: self.jump_to_compound(event))
-            self.timer_textchange.start()
-
-        self.jump_to_compound_input.textChanged.connect(timerstart)
-
+        self.jump_to_compound_button.pressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
 
         #menubar stuff
         # change range action in menubar
@@ -337,6 +330,15 @@ def main():
     app = QtWidgets.QApplication(sys.argv)
     main = MainWindow()
     main.show()
+    sys._excepthook = sys.excepthook
+
+    def exception_hook(exctype, value, traceback):
+        print("silent error")
+        print(exctype, value, traceback)
+        sys._excepthook(exctype, value, traceback)
+        sys.exit(1)
+
+    sys.excepthook = exception_hook
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
