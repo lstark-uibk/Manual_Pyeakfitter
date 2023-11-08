@@ -212,8 +212,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
         self.graphWidget.setBackground(self.plot_settings["background_color"])
-        self.graphWidget.setLabel('bottom', "m/z [Th]")
-        self.graphWidget.setLabel('left', "Signal [cps]")
+        self.graphWidget.showGrid(y = True)
+        self.graphWidget.getAxis('bottom').setPen(pg.mkPen(color='k'))
+        self.graphWidget.getAxis('left').setPen(pg.mkPen(color='k'))
+        from PyQt5.QtGui import QFont
+        font = QFont('Courier New', 11, QFont.Bold)  # Define a font for the x-axis ticks
+        self.graphWidget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        self.graphWidget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        self.graphWidget.getAxis('bottom').setPen('k')
+        self.graphWidget.getAxis('left').setPen('k')
+        self.graphWidget.getAxis('bottom').setTextPen('k')
+        self.graphWidget.getAxis('left').setTextPen('k')
+        self.graphWidget.getAxis('left').setLabel(text="Signal [cps]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
+        self.graphWidget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
         self.graphWidget.setLogMode(y=True)
         self.graphWidget.addLegend()
         # make bg plots
