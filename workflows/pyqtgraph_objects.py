@@ -5,7 +5,7 @@ import workflows.masslist_objects as mf
 import PyQt5.QtGui as QtGui
 import numpy as np
 
-def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movable = False, deletable = False):
+def _redraw_vline(parent, xlims, massisosugg, color, width, type = "mass", hover = True, movable = False, deletable = False):
     new_xlim_current_masses = massisosugg.masses[
         (massisosugg.masses > xlims[0]) & (massisosugg.masses < xlims[1])]
     # first remove lines which are not in the view field anymore
@@ -27,13 +27,13 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, hover = True, movabl
                 z = 500
             else: z = 1000
             if np.any(element_numbers):
-                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), hover = hover, movable= movable,
+                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), Type = type, hover = hover, movable= movable,
                                                 angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
                                                            "anchors": [(0, 0), (0, 0)]},deletable=deletable)
             else:
-                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(parent.plot_settings["vert_lines_color_masslist_without_composition"], width=width), hover = hover, movable= movable,
+                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, Type = "mass_without_comp", pen=pg.mkPen(parent.plot_settings["vert_lines_color_masslist_without_composition"], width=width), hover = hover, movable= movable,
                                                 angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
                                                 labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
                                                            "rotateAxis":(1, 0),
@@ -59,11 +59,11 @@ def redraw_vlines(parent, xlims):
     """
 
     if np.diff(xlims) < 0.7:
-        _redraw_vline(parent, xlims, parent.ml.suggestions,
+        _redraw_vline(parent, xlims, parent.ml.suggestions, type = "sugg",
                                         color=parent.plot_settings["vert_lines_color_suggestions"], width=parent.plot_settings["vert_lines_width_suggestions"])
-        _redraw_vline(parent, xlims, parent.ml.masslist,
+        _redraw_vline(parent, xlims, parent.ml.masslist, type = "mass",
                                         color=parent.plot_settings["vert_lines_color_masslist"], width=parent.plot_settings["vert_lines_width_masslist"], movable=True, deletable = True)
-        _redraw_vline(parent, xlims, parent.ml.isotopes,
+        _redraw_vline(parent, xlims, parent.ml.isotopes, type = "iso",
                                     color=parent.plot_settings["vert_lines_color_isotopes"], width=parent.plot_settings["vert_lines_width_isotopes"], hover=False)
 
 
@@ -88,20 +88,22 @@ def redraw_localfit(parent,xlims):
 
     if not np.array_equal(masses_influencing_localfit,parent.sp.current_local_fit_masses):
         print("because there is a new mass make new local fit")
-        for item in parent.sp.current_local_fit:
-            parent.graphWidget.removeItem(item)
-            parent.sp.current_local_fit = []
-            parent.sp.current_local_fit_masses = []
 
         fitmassaxis, fitspectrum, coefficients, A = parent.sp.get_mass_coefficients(xlims,parent.ml)
-        localfit = parent.graphWidget.plot(fitmassaxis, fitspectrum,pen= parent.plot_settings["local_fit"], name = "Local Fit")
-        localfit.setLogMode(None, True)
-        # for i in range(coefficients.shape[0]):
-        #     subfit = parent.graphWidget.plot(fitmassaxis, A[:,i]*coefficients[i], pen="k")
-        #     subfit.setLogMode(None, True)
-        #     parent.sp.current_local_fit.append(subfit)
-        parent.sp.current_local_fit_masses = masses_influencing_localfit
-        parent.sp.current_local_fit = [localfit]
+        if not parent.sp.current_local_fit:
+            localfit = parent.graphWidget.plot(fitmassaxis, fitspectrum, pen=parent.plot_settings["local_fit"], name="Local Fit")
+            localfit.setLogMode(None, True)
+            parent.sp.current_local_fit_masses = masses_influencing_localfit
+            parent.sp.current_local_fit = localfit
+        else:
+            parent.sp.current_local_fit.setData(fitmassaxis, fitspectrum)
+            parent.sp.current_local_fit_masses = masses_influencing_localfit
+        # localfit.setLogMode(None, True)
+        # # for i in range(coefficients.shape[0]):
+        # #     subfit = parent.graphWidget.plot(fitmassaxis, A[:,i]*coefficients[i], pen="k")
+        # #     subfit.setLogMode(None, True)
+        # #     parent.sp.current_local_fit.append(subfit)
+
 
 def replot_spectra(parent, plotsetting_show):
     """replot all spectrum lines with the setting given in Mainwindow.plotsettings
@@ -217,7 +219,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
     deletable : True/False
     *args,**kwargs: arguments for pyqtgraph.InfiniteLin
     """
-    def __init__(self,Parent,hover=True, deletable = False ,*args,**kwargs):
+    def __init__(self,Parent,hover=True, deletable = False, Type = "mass" ,*args,**kwargs):
         """
 
         """
@@ -227,6 +229,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         self.delatable = deletable
         self.vb = self.parent.spectrumplot.getViewBox()
         self.xlims, self.ylims = self.vb.viewRange()
+        self.type = Type
 
 
     def hoverEvent(self, ev):
@@ -251,10 +254,9 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 self.parent.ml.currently_hovered = []
 
 
-
     def mouseClickEvent(self, ev):
+        print(ev)
         self.sigClicked.emit(self, ev)
-        #mod
         if ev.button() == QtCore.Qt.MouseButton.LeftButton and self.hover:
             print("try to add mass", self.value())
             if self.value() not in self.parent.ml.masslist.masses:
@@ -273,9 +275,10 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 # self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_default"])
                 self.pen = fn.mkPen(0.5)
                 redraw_localfit(self.parent,self.xlims)
-                self.update()
-        if ev.button() == QtCore.Qt.MouseButton.RightButton:
-            pass
+            else:
+                print("This mass is not already in Masslist to delete")
+                # self.update()
+
 
 
     def mouseDragEvent(self, ev):

@@ -8,9 +8,9 @@ from PyQt5.QtCore import Qt
 #menu functions
 def open_file(parent):
     # show the dialog
-    # dialog = QtWidgets.QFileDialog()
-    # filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
-    filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
+    dialog = QtWidgets.QFileDialog()
+    filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
+    # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
     parent.filename = filepath
     if parent.file_loaded:
         print("remove old plot stuff")

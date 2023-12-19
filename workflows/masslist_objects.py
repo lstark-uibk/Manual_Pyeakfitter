@@ -283,7 +283,7 @@ class Masslist():
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
                 pyqtgraph_objects.redraw_vlines(parent, xlims)
-                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), hover = False, movable= False,
+                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), Type = "sugg", hover = False, movable= False,
                                                 angle=90)
 
                 parent.ml.suggestions.current_lines.append(highlight_line)
