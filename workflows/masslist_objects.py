@@ -209,7 +209,7 @@ class Masslist():
 
     '''
 
-    names_elements = ["C", "C13", "H", "H+", "N", "O", "O18", "S"]
+    names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S", "I", "Si"] #iodine, silizium
     order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
     masses_elements = np.array([12,
                                 13.00335,
@@ -219,8 +219,10 @@ class Masslist():
                                 15.99492,
                                 17.99916,
                                 31.97207,
+                                126.90448,
+                                27.9763
                                ])
-    mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
+    mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 1), (0, 1), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
     # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
     nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
@@ -367,7 +369,7 @@ class Masslist():
                     self.suggestions.masses = np.append(self.suggestions.masses, mass)
                     self.suggestions.element_numbers = np.append(self.suggestions.element_numbers, self.masslist.element_numbers[index_of_deletion], axis=0)
                     sortperm = np.argsort(self.suggestions.masses)
-                    self.suggestions.masses = self.masslist.masses[sortperm]
+                    self.suggestions.masses = self.suggestions.masses[sortperm]
                     self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
             print("delete mass ", mass, ",", get_names_out_of_element_numbers(self.masslist.element_numbers[index_of_deletion].flatten()) ,"from masslist")
