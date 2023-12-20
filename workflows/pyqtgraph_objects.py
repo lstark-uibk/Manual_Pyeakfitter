@@ -245,7 +245,6 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                     item = self.parent.masslist_widget.item(index)
                     if item.text().split()[0] == str(round(self.value(),6)):
                         # Set the current item and scroll to it
-                        print(f"I jump to mass {self.value()} in the qlist")
                         self.parent.masslist_widget.setCurrentItem(item)
                         break  # Exit the loop if found
         else:

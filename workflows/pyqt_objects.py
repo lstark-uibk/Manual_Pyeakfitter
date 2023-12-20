@@ -12,13 +12,15 @@ def open_file(parent):
     filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
     # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
     parent.filename = filepath
-    if parent.file_loaded:
-        print("remove old plot stuff")
-        pyqtgraph_objects.remove_all_plot_items(parent)
-    parent.init_basket_objects()
-    parent.init_UI_file_loaded()
-    parent.init_plots()
-    parent.file_loaded = True
+
+    if filepath:
+        if parent.file_loaded:
+            print("remove old plot stuff")
+            pyqtgraph_objects.remove_all_plot_items(parent)
+        parent.init_basket_objects()
+        parent.init_UI_file_loaded()
+        parent.init_plots()
+        parent.file_loaded = True
 
 class QHSeparationLine(QtWidgets.QFrame):
   '''
