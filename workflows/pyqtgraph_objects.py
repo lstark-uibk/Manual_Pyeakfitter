@@ -91,12 +91,15 @@ def redraw_localfit(parent,xlims):
         print("because there is a new mass make new local fit")
 
         fitmassaxis, fitspectrum, coefficients, A = parent.sp.get_mass_coefficients(xlims,parent.ml)
-        if not parent.sp.current_local_fit:
+        if not parent.sp.current_local_fit_init:
+            print("Make a new local fit")
             localfit = parent.graphWidget.plot(fitmassaxis, fitspectrum, pen=parent.plot_settings["local_fit"], name="Local Fit")
             localfit.setLogMode(None, True)
             parent.sp.current_local_fit_masses = masses_influencing_localfit
             parent.sp.current_local_fit = localfit
+            parent.sp.current_local_fit_init = True
         else:
+            print("Redo local fit data")
             parent.sp.current_local_fit.setData(fitmassaxis, fitspectrum)
             parent.sp.current_local_fit_masses = masses_influencing_localfit
         # localfit.setLogMode(None, True)
@@ -171,7 +174,6 @@ def remove_all_vlines(parent):
     parent.ml.suggestions.current_lines = _remove_plot_items(parent, parent.ml.suggestions.current_lines)
     parent.ml.masslist.current_lines = _remove_plot_items(parent, parent.ml.masslist.current_lines)
     parent.ml.isotopes.current_lines = _remove_plot_items(parent, parent.ml.isotopes.current_lines)
-    parent.sp.current_local_fit_masses = _remove_plot_items(parent, [parent.sp.current_local_fit])
 
 def remove_all_plot_items(parent):
     """remove all plot_items in the graphWidget
@@ -207,14 +209,6 @@ def redraw_subspec(parent):
                                                   pen=parent.plot_settings["sub_spectrum_color"], name="subspectrum")
         parent.subspec_plot.setLogMode(None, True)
 
-class InfLineLabel(TextItem):
-    #overwrite InfLineLabel class used by InfiniteLine
-    def __init__(self):
-        super().__init__()
-        font = self.font()
-        font.setPointSize(100)
-        self.setFont(font)
-
 
 
 class InfiniteLine_Mass(pg.InfiniteLine):
@@ -240,10 +234,10 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         self.vb = self.parent.spectrumplot.getViewBox()
         self.xlims, self.ylims = self.vb.viewRange()
         self.type = Type
-        print(self.label.textItem.font())
         font = self.parent.plot_settings["font"]
         font.setPointSize(12)
         self.label.textItem.setFont(font)
+        self.label.setColor([0,0,0])
 
 
     def hoverEvent(self, ev):

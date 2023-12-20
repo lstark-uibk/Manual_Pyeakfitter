@@ -173,6 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
                               "background_color": "w",
                               "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
                               }
+
         self.spectrumplot = []
         self.spectrum_max_plot = []
         self.spectrum_min_plot = []
@@ -267,6 +268,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if np.diff(xlims) > 1.1:
             pyqtgraph_objects.remove_all_vlines(self)
+            if self.sp.current_local_fit:
+                self.sp.current_local_fit.setData([0], [0])
+                self.sp.current_local_fit_masses = np.array([0])
         else:
             pyqtgraph_objects.redraw_vlines(self, xlims)
         if np.diff(xlims) < 0.7:

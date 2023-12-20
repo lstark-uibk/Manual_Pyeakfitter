@@ -474,6 +474,7 @@ class Spectrum():
             self.peakshapemiddle = f["MassDepPeakshapeCenterMasses"][()]#
         self.peakshapeborders = self._init_peakshapeborders()
         self.current_local_fit = []
+        self.current_local_fit_init = False
         self.current_local_fit_masses = []
 
     def make_singlepeak(self, mass, massaxis_this_zoom):
