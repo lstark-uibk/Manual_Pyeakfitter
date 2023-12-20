@@ -117,7 +117,7 @@ def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersan
         Element_numbers = Element_numbers[selMasses_mask,:]
 
 
-    return [Masses,Element_numbers],{"Mass_suggestions_ranges" : Mass_suggestions_ranges}
+    return [Masses,Element_numbers],{"Mass_suggestions_ranges" : Mass_suggestions_range_numbers}
 
 
 class _Data():
@@ -232,7 +232,7 @@ class Masslist():
     nr_elements = len(names_elements)
     def __init__(self, Filename):
         self.filename = Filename
-        args, kwargs = _load_suggestions(self.mass_suggestions_ranges, masses_elements = self.masses_elements)
+        args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
         self.suggestions = _Data(*args, **kwargs)
         self.masslist = _Data(*_load_masslist(Filename, self.nr_elements))
         args, kwargs = _load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)

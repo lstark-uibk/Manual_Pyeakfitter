@@ -1,7 +1,7 @@
 import PyQt5.QtGui as QtGui
 import PyQt5.QtWidgets as QtWidgets
 import numpy as np
-
+import re
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 from PyQt5.QtCore import Qt
 
@@ -83,21 +83,17 @@ class AddnewElement(QtWidgets.QMainWindow):
         self.parent = parent
         self.setWindowTitle("Add new Element")
         #make form layout
-        form = QtWidgets.QFormLayout(self)
-        header = QtWidgets.QLabel("Make a new suggestion compound ")
-        form.addRow(header)
-        self.compound_inquiry = {}
-        for element in self.parent.ml.names_elements:
-            self.compound_inquiry[element] = QtWidgets.QLineEdit()
-            self.compound_inquiry[element].setValidator(QtGui.QIntValidator(10,99))
-            form.addRow(element, self.compound_inquiry[element])
+        self.label_add_compound = QtWidgets.QLabel("Jump to compound: ")
+        self.add_compound_input = QtWidgets.QLineEdit()
+        self.add_compound_layout.addWidget(self.label_jump_compound)
+        self.add_compound_layout.addWidget(self.jump_to_compound_input)
 
         collectbutton = QtWidgets.QPushButton("Add Element")
         collectbutton.clicked.connect(self.addElement)
-        form.addRow(collectbutton)
+        self.centralLayout.addRow(collectbutton)
         closebutton = QtWidgets.QPushButton("Close")
         closebutton.clicked.connect(self.closeWindow)
-        form.addRow(closebutton)
+        self.centralLayout.addRow(closebutton)
 
         self.centralLayout.addLayout(form)
         self.setCentralWidget(self.centralWidget)
@@ -117,79 +113,126 @@ class AddnewElement(QtWidgets.QMainWindow):
 
 
 
-class Validator_mass_ranges(QtGui.QValidator):
+class RegExpValidator(QtGui.QValidator):
+    def __init__(self, parent=None):
+        super(RegExpValidator, self).__init__(parent)
+        self.reg_exp = re.compile(r'(((\d+)?\s*-?\s*(\d+)?)\s*&?\s*)*')
+        self.reg_expfindall = re.compile(r'(\d+)?\s*-?\s*(\d+)?\s*&?\s*')
+        # self.reg_exp = re.compile(r'(\d+)\s*')
 
-    def __init__(self,i, j,selectmasswindow, mainwindow):
-        QtGui.QValidator.__init__(self,selectmasswindow)
-        #make a validator for every input with the i,j value stored
-        self.i = i -1
-        self.j = j -1
-        self.selectmasswindow = selectmasswindow
-        self.mainwindow = mainwindow
-
-    def validate(self, a0, a1):
-        if a0.isdigit() or a0 == "0":
-            if a1 < 3:
-                digit = int(a0)
-                if len(self.selectmasswindow.inputs) < len(self.mainwindow.ml.mass_suggestions_ranges): # if we didnot add all the input fields we also skip the validation
-                    return (QtGui.QValidator.Acceptable, a0, a1)
-
-                if self.j == 0: # the input is a minimum
-                    if digit <= int(self.selectmasswindow.inputs[self.i][1].text()): # check whether it is lower than the maximum
-                        return (QtGui.QValidator.Acceptable, a0, a1)
-
-                if self.j == 1:  # the input is a maximum
-                    if digit >= int(self.selectmasswindow.inputs[self.i][0].text()):  # check whether it is higher than the minimum
-                        return (QtGui.QValidator.Acceptable, a0, a1)
-
-            return (QtGui.QValidator.Invalid, a0, a1)
-        elif a0 == "":  #it is also valid to have nothing
-            return (QtGui.QValidator.Acceptable, a0, a1)
+    def validate(self, input_text, pos):
+        input_numbers = re.findall(self.reg_expfindall,input_text)
+        numberordering_correct = True
+        for y in input_numbers:
+            try:
+                if float(y[0]) > float(y[1]):
+                    numberordering_correct = False
+            except:
+                pass
+        if self.reg_exp.fullmatch(input_text) and numberordering_correct:
+            return QtGui.QValidator.Acceptable, input_text, pos
+        elif input_text == '':
+            return QtGui.QValidator.Intermediate, input_text, pos
         else:
-            return (QtGui.QValidator.Invalid,a0,a1)
-
+            return QtGui.QValidator.Invalid, input_text, pos
 
 class SelectMassRangeWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self,parent):
         super(SelectMassRangeWindow, self).__init__(parent)
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
-        self.gridlayout = QtWidgets.QGridLayout()
         self.parent = parent
-        self.setWindowTitle("Select Mass Ranges")
 
-        self.gridlayout.addWidget(QtWidgets.QLabel("Lower Limit"), 0, 1)
-        self.gridlayout.addWidget(QtWidgets.QLabel("Upper Limit"), 0, 2)
-        self.labels = []
-        self.inputs = []
-        self.mass_suggestions_ranges = parent.ml.mass_suggestions_ranges
+        line_edits = {}
+        regex_validator = RegExpValidator(self)
+        self.formlayout = QtWidgets.QFormLayout(self)
+        self.centralLayout.addLayout(self.formlayout)
 
-        for [i, name], suggrange in zip(enumerate(parent.ml.names_elements),parent.ml.mass_suggestions_ranges):
-            i = i+1
-            label = self.gridlayout.addWidget(QtWidgets.QLabel(name), i, 0)
-            self.labels.append(label)
-            thisline = []
-            for j in range(1,3):
-                input = QtWidgets.QLineEdit()
-                thisline.append(input)
-                validator = Validator_mass_ranges(i,j,selectmasswindow = self, mainwindow = parent)
-                input.setValidator(validator)
-                input.setText(str(suggrange[j-1]))
-                self.gridlayout.addWidget(input , i, j)
-            self.inputs.append(thisline)
+        for i, key in enumerate(self.parent.ml.names_elements):
+            line_edits[key] = QtWidgets.QLineEdit(self)
+            line_edits[key].setValidator(regex_validator)
+            pretext = self.get_regexp_outoflist(self.parent.ml.mass_suggestions_numbers[key])
+            line_edits[key].setText(pretext)
+            label = QtWidgets.QLabel(key)
+            self.formlayout.addRow(label, line_edits[key])
 
-
-        self.centralLayout.addLayout(self.gridlayout)
         collectbutton = QtWidgets.QPushButton("OK")
         collectbutton.clicked.connect(self.change_ranges)
         self.centralLayout.addWidget(collectbutton)
+
         self.setCentralWidget(self.centralWidget)
 
-
     def change_ranges(self):
-        mass_suggestions_ranges_new = [tuple([int(x.text()) for x in row]) for row in self.inputs]
-        self.parent.ml.mass_suggestions_ranges = mass_suggestions_ranges_new
+        #read in the mass suggestion numbers, that are put in
+        mass_suggestions_numbers = {}
+        for row in range(self.formlayout.count()-1):
+            label_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.LabelRole)
+            field_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.FieldRole)
+            if field_item:
+                line_edit = field_item.widget()
+                text = line_edit.text()
+                element = label_item.widget().text()
+                mass_suggestions_numbers[element] = []
+                pattern = re.compile(r'(\d+)?\s*-?\s*(\d+)?\s*&?\s*')
+                readinlist = re.findall(pattern,text)
 
+                for i, x in enumerate(readinlist):
+                    start = 0
+                    end = 0
+                    try:
+                        start = int(x[0])
+                        try:
+                            end = int(x[1])
+                        except:
+                            pass
+                    except:
+                        pass
+                    if start or end:
+                        if end:
+                            mass_suggestions_numbers[element] += list(range(start,end+1))
+                        else:
+                            mass_suggestions_numbers[element].append(start)
+                    else:
+                        pass
+                        mass_suggestions_numbers[element].append(0)
+                mass_suggestions_numbers[element] = list(set(mass_suggestions_numbers[element]))
+        #assign them to the ml object
+        self.parent.ml.mass_suggestions_ranges = mass_suggestions_numbers
+        pyqtgraph_objects.remove_all_vlines(self.parent)
+        self.parent.ml.reinit(self.parent.filename)
+        xlims, ylims = self.parent.vb.viewRange()
+        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
+        print("change the input ranges to")
+        print(self.parent.ml.mass_suggestions_ranges)
+        print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
+
+    def get_regexp_outoflist(self, sugg_numbers):
+        result = []
+        current_group = []
+        for number in sugg_numbers:
+            if not current_group or number == current_group[-1] + 1:
+                current_group.append(number)
+            else:
+                result.append(current_group)
+                current_group = [number]
+        if current_group:
+            result.append(current_group)
+
+        string = ""
+        for i, x in enumerate(result):
+            if i < len(result) - 1:
+                if len(x) > 1:
+                    print(x[0])
+                    string = string + f"{x[0]} - {x[-1]} & "
+                else:
+                    string = string + f"{x[0]} & "
+            else:
+                if len(x) > 1:
+                    string = string + f"{x[0]} - {x[-1]}"
+                else:
+                    string = string + f"{x[0]}"
+            return string
+            print(string)
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
