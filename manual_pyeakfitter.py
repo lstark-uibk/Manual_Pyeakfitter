@@ -156,17 +156,19 @@ class MainWindow(QtWidgets.QMainWindow):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.Masslist(self.filename)
-        self.plot_settings = {"vert_lines_color_suggestions": (97, 99, 102,70),
+        self.plot_settings = {"font" : QtGui.QFont('Calibri', 11),
+                              "vert_lines_color_suggestions": (97, 99, 102,70),
                               "vert_lines_color_masslist": (38, 135, 20),
                               "vert_lines_color_masslist_without_composition": (13, 110, 184),
                               "vert_lines_color_isotopes": (252, 3, 244, 70), # RGB tubel and last number gives the transparency (from 0 to 255)
-                              "vert_lines_width_suggestions": 1,
-                              "vert_lines_width_masslist": 2,
+                              "vert_lines_width_suggestions": 1.5,
+                              "vert_lines_width_masslist": 2.5,
                               "vert_lines_width_isotopes": 1.5,
+                              "spectra_width": 1,
                               "average_spectrum_color" : (252, 49, 3),
-                              "max_spectrum_color": (122, 72, 6, 80),
-                              "min_spectrum_color": (11, 125, 191, 80),
-                              "sub_spectrum_color": (103, 42, 201, 80),
+                              "max_spectrum_color": (51, 10, 84),
+                              "min_spectrum_color": (8, 84, 46),
+                              "sub_spectrum_color": (13, 99, 5),
                               "local_fit": (0,0,210),
                               "background_color": "w",
                               "show_plots": [True,False,False,False] #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
@@ -225,8 +227,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.showGrid(y = True)
         self.graphWidget.getAxis('bottom').setPen(pg.mkPen(color='k'))
         self.graphWidget.getAxis('left').setPen(pg.mkPen(color='k'))
-        from PyQt5.QtGui import QFont
-        font = QFont('Courier New', 11, QFont.Bold)  # Define a font for the x-axis ticks
+        font = self.plot_settings["font"]
         self.graphWidget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
         self.graphWidget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
         self.graphWidget.getAxis('bottom').setPen('k')

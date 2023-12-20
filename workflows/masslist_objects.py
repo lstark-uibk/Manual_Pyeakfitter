@@ -299,10 +299,6 @@ class Masslist():
                 one_time_timer.start(3000)
 
 
-            else:
-                # print("Compound already in suggestions list")
-                pass
-
 
     def add_mass_to_masslist(self, parent, mass):
         '''Add the given mass to the masslist _Data object delete the corresponding mass in the suggestion _Data object and redraw the InfinitLineMass objects, so that it will be shown on the plot.

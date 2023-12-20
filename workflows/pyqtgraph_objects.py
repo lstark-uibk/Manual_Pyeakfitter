@@ -1,5 +1,6 @@
 import pyqtgraph as pg
 from pyqtgraph import functions as fn
+from pyqtgraph.graphicsItems.TextItem import TextItem
 from pyqtgraph.Qt import QtCore
 import workflows.masslist_objects as mf
 import PyQt5.QtGui as QtGui
@@ -122,9 +123,9 @@ def replot_spectra(parent, plotsetting_show):
     if parent.spectrumplot:
         parent.graphWidget.removeItem(parent.spectrumplot)
     if plotsetting_show[0]:
-
+        pen = {'color': 'red', 'width': 2}
         parent.spectrumplot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum,
-                                                  pen=parent.plot_settings["average_spectrum_color"], name="average spectrum")
+                                                  pen={'color': parent.plot_settings["average_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="average spectrum")
         parent.spectrumplot.setLogMode(None, True)
         # make this when doubleclicking
         # is shifted
@@ -134,19 +135,19 @@ def replot_spectra(parent, plotsetting_show):
         parent.graphWidget.removeItem(parent.spectrum_max_plot)
     if plotsetting_show[1]:
         parent.spectrum_max_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_max,
-                                                       pen=parent.plot_settings["max_spectrum_color"], name="max spectrum")
+                                                       pen={'color': parent.plot_settings["max_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="max spectrum")
         parent.spectrum_max_plot.setLogMode(None, True)
     if parent.spectrum_min_plot:
         parent.graphWidget.removeItem(parent.spectrum_min_plot)
     if plotsetting_show[2]:
         parent.spectrum_min_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_min,
-                                                       pen=parent.plot_settings["min_spectrum_color"], name="min spectrum")
+                                                       pen={'color': parent.plot_settings["min_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="min spectrum")
         parent.spectrum_min_plot.setLogMode(None, True)
     if parent.subspec_plot:
         parent.graphWidget.removeItem(parent.subspec_plot)
     if plotsetting_show[3]:
         parent.subspec_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.sum_specs[0, :],
-                                                  pen=parent.plot_settings["sub_spectrum_color"], name="subspectrum")
+                                                  pen={'color': parent.plot_settings["sub_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="subspectrum")
         parent.subspec_plot.setLogMode(None, True)
 
 def _remove_plot_items(parent,item_list):
@@ -170,7 +171,7 @@ def remove_all_vlines(parent):
     parent.ml.suggestions.current_lines = _remove_plot_items(parent, parent.ml.suggestions.current_lines)
     parent.ml.masslist.current_lines = _remove_plot_items(parent, parent.ml.masslist.current_lines)
     parent.ml.isotopes.current_lines = _remove_plot_items(parent, parent.ml.isotopes.current_lines)
-    parent.sp.current_local_fit_masses = _remove_plot_items(parent, parent.sp.current_local_fit)
+    parent.sp.current_local_fit_masses = _remove_plot_items(parent, [parent.sp.current_local_fit])
 
 def remove_all_plot_items(parent):
     """remove all plot_items in the graphWidget
@@ -206,6 +207,15 @@ def redraw_subspec(parent):
                                                   pen=parent.plot_settings["sub_spectrum_color"], name="subspectrum")
         parent.subspec_plot.setLogMode(None, True)
 
+class InfLineLabel(TextItem):
+    #overwrite InfLineLabel class used by InfiniteLine
+    def __init__(self):
+        super().__init__()
+        font = self.font()
+        font.setPointSize(100)
+        self.setFont(font)
+
+
 
 class InfiniteLine_Mass(pg.InfiniteLine):
     """
@@ -230,6 +240,10 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         self.vb = self.parent.spectrumplot.getViewBox()
         self.xlims, self.ylims = self.vb.viewRange()
         self.type = Type
+        print(self.label.textItem.font())
+        font = self.parent.plot_settings["font"]
+        font.setPointSize(12)
+        self.label.textItem.setFont(font)
 
 
     def hoverEvent(self, ev):
