@@ -3,6 +3,7 @@ import PyQt5.QtWidgets as QtWidgets
 import numpy as np
 import re
 import workflows.pyqtgraph_objects as pyqtgraph_objects
+import workflows.masslist_objects as mo
 from PyQt5.QtCore import Qt
 
 #menu functions
@@ -80,23 +81,45 @@ class AddnewElement(QtWidgets.QMainWindow):
         super(AddnewElement, self).__init__(parent)
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
+        self.add_compound_layout = QtWidgets.QHBoxLayout()
+        self.centralLayout.addLayout(self.add_compound_layout)
+        self.show_mass_layout = QtWidgets.QHBoxLayout()
+        self.centralLayout.addLayout(self.show_mass_layout)
+
+
+
         self.parent = parent
         self.setWindowTitle("Add new Element")
         #make form layout
-        self.label_add_compound = QtWidgets.QLabel("Jump to compound: ")
+        self.label_add_compound = QtWidgets.QLabel("Add compound: ")
         self.add_compound_input = QtWidgets.QLineEdit()
-        self.add_compound_layout.addWidget(self.label_jump_compound)
-        self.add_compound_layout.addWidget(self.jump_to_compound_input)
+        self.add_compound_input.returnPressed.connect(lambda: self.add_compound(self.add_compound_input.text()))
+
+        self.add_compound_layout.addWidget(self.label_add_compound)
+        self.add_compound_layout.addWidget(self.add_compound_input)
+
+        self.showcompound_label = QtWidgets.QLabel("Mass:")
+        self.showmass_label = QtWidgets.QLabel()
+        self.show_mass_layout.addWidget(self.showcompound_label)
+        self.show_mass_layout.addWidget(self.showmass_label)
+
 
         collectbutton = QtWidgets.QPushButton("Add Element")
-        collectbutton.clicked.connect(self.addElement)
-        self.centralLayout.addRow(collectbutton)
+        collectbutton.clicked.connect(lambda: self.add_compound(self.add_compound_input.text()))
+        self.centralLayout.addWidget(collectbutton)
         closebutton = QtWidgets.QPushButton("Close")
         closebutton.clicked.connect(self.closeWindow)
-        self.centralLayout.addRow(closebutton)
+        self.centralLayout.addWidget(closebutton)
 
-        self.centralLayout.addLayout(form)
         self.setCentralWidget(self.centralWidget)
+    def add_compound(self,compoundstring):
+        print(compoundstring)
+        mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
+        self.parent.jump_to_mass(float(mass))
+        if not (self.parent.ml.suggestions.element_numbers == compound).all(axis=1).any():
+            self.parent.ml.add_suggestion_to_sugglist(self.parent, compound)
+        self.showmass_label.setText(f"{mass}")
+        print(mass, compound)
 
     def addElement(self):
         compoundarray = [0]*len(self.parent.ml.names_elements)
@@ -105,6 +128,7 @@ class AddnewElement(QtWidgets.QMainWindow):
                 compoundarray[index] = 0
             else:
                 compoundarray[index] = int(self.compound_inquiry[compound].text())
+        print(compoundarray)
         compoundarray = np.array(compoundarray)
         self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
 
