@@ -290,8 +290,14 @@ class Masslist():
                 highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), Type = "sugg", hover = False, movable= False,
                                                 angle=90)
 
-                parent.ml.suggestions.current_lines.append(highlight_line)
+                # parent.ml.suggestions.current_lines.append(highlight_line)
                 parent.graphWidget.addItem(highlight_line)
+                one_time_timer = QtCore.QTimer(parent)
+                one_time_timer.timeout.connect(lambda: parent.graphWidget.removeItem(highlight_line))
+
+                # Start the one-time timer with a 1000ms (1 second) interval
+                one_time_timer.start(3000)
+
 
             else:
                 # print("Compound already in suggestions list")
