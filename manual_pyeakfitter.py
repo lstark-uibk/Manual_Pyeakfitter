@@ -45,6 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         print("Initializing Window")
+        self.setWindowTitle("Manual Pyeakfitter")
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
         # self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
@@ -103,7 +104,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-        self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
+        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
 
         # create menu
         menubar = QtWidgets.QMenuBar()
@@ -195,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
-        self.jump_to_compound_button.pressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
+        # self.jump_to_compound_button.pressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         self.jump_to_compound_input.returnPressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         #menubar stuff
         # change range action in menubar

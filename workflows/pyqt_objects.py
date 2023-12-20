@@ -8,9 +8,9 @@ from PyQt5.QtCore import Qt
 #menu functions
 def open_file(parent):
     # show the dialog
-    dialog = QtWidgets.QFileDialog()
-    filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
-    # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
+    # dialog = QtWidgets.QFileDialog()
+    # filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
+    filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
     parent.filename = filepath
 
     if filepath:
@@ -81,6 +81,7 @@ class AddnewElement(QtWidgets.QMainWindow):
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.parent = parent
+        self.setWindowTitle("Add new Element")
         #make form layout
         form = QtWidgets.QFormLayout(self)
         header = QtWidgets.QLabel("Make a new suggestion compound ")
@@ -155,6 +156,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.gridlayout = QtWidgets.QGridLayout()
         self.parent = parent
+        self.setWindowTitle("Select Mass Ranges")
 
         self.gridlayout.addWidget(QtWidgets.QLabel("Lower Limit"), 0, 1)
         self.gridlayout.addWidget(QtWidgets.QLabel("Upper Limit"), 0, 2)
@@ -187,13 +189,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
     def change_ranges(self):
         mass_suggestions_ranges_new = [tuple([int(x.text()) for x in row]) for row in self.inputs]
         self.parent.ml.mass_suggestions_ranges = mass_suggestions_ranges_new
-        pyqtgraph_objects.remove_all_vlines(self.parent)
-        self.parent.ml.reinit(self.parent.filename)
-        xlims, ylims = self.parent.vb.viewRange()
-        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
-        print("change the input ranges to")
-        print(self.parent.ml.mass_suggestions_ranges)
-        print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
+
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):

@@ -96,10 +96,10 @@ def _load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
 
 
 #
-def _load_suggestions(Mass_suggestions_ranges, masses_elements, filtersanemasses = True):
+def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersanemasses = True):
     Masses_elements = masses_elements
 
-    Listofranges = [list(range(A[0], A[1] + 1)) for A in Mass_suggestions_ranges]
+    Listofranges = [Mass_suggestions_range_numbers[key] for key in Mass_suggestions_range_numbers]
     Element_numbers = np.array(list(itertools.product(*Listofranges)))
     Masses = np.sum(
         Element_numbers * Masses_elements, axis=1)
@@ -223,6 +223,9 @@ class Masslist():
                                 27.9763
                                ])
     mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 1), (0, 1), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
+    mass_suggestions_numbers = {}
+    for i,key in enumerate(names_elements):
+        mass_suggestions_numbers[key] = list(range(mass_suggestions_ranges[i][0],mass_suggestions_ranges[i][1]+1))
     # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
     nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
