@@ -6,7 +6,16 @@ import workflows.masslist_objects as mf
 import PyQt5.QtGui as QtGui
 import numpy as np
 
-def _redraw_vline(parent, xlims, massisosugg, color, width, type = "mass", hover = True, movable = False, deletable = False):
+def _redraw_vline(parent, xlims, type = "mass"):
+    if type == "mass":
+        massisosugg = parent.ml.masslist
+        z = 1000
+    if type == "sugg":
+        massisosugg = parent.ml.suggestions
+        z = 0
+    if type == "iso":
+        massisosugg = parent.ml.isotopes
+        z = 500
     new_xlim_current_masses = massisosugg.masses[
         (massisosugg.masses > xlims[0]) & (massisosugg.masses < xlims[1])]
     # first remove lines which are not in the view field anymore
@@ -20,26 +29,12 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, type = "mass", hover
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
-            print(mass,element_numbers)
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
             #print in layer suggstions<isotopes<masslist
-            if mass in parent.ml.suggestions.masses:
-                z = 0
-            elif mass in parent.ml.isotopes.masses:
-                z = 500
-            else: z = 1000
             if np.any(element_numbers):
-                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen(color, width=width), Type = type, hover = hover, movable= movable,
-                                                angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
-                                                labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
-                                                           "rotateAxis":(1, 0),
-                                                           "anchors": [(0, 0), (0, 0)]},deletable=deletable)
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= compound_name)
             else:
-                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, Type = "mass_without_comp", pen=pg.mkPen(parent.plot_settings["vert_lines_color_masslist_without_composition"], width=width), hover = hover, movable= movable,
-                                                angle=90, hoverPen={"color": (0,0,0),"width": 2}, label= compound_name,
-                                                labelOpts={"position": 0,#0.8 - len(compound_name)* 0.01,
-                                                           "rotateAxis":(1, 0),
-                                                           "anchors": [(0, 0), (0, 0)]},deletable=deletable)
+                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, Type = "mass_without_comp", Label= compound_name)
             sugisomass_line.setZValue(z)
             parent.graphWidget.addItem(sugisomass_line)
             massisosugg.current_lines.append(sugisomass_line)
@@ -61,12 +56,10 @@ def redraw_vlines(parent, xlims):
     """
 
     if np.diff(xlims) < 0.7:
-        _redraw_vline(parent, xlims, parent.ml.suggestions, type = "sugg",
-                                        color=parent.plot_settings["vert_lines_color_suggestions"], width=parent.plot_settings["vert_lines_width_suggestions"])
-        _redraw_vline(parent, xlims, parent.ml.masslist, type = "mass",
-                                        color=parent.plot_settings["vert_lines_color_masslist"], width=parent.plot_settings["vert_lines_width_masslist"], movable=True, deletable = True)
-        _redraw_vline(parent, xlims, parent.ml.isotopes, type = "iso",
-                                    color=parent.plot_settings["vert_lines_color_isotopes"], width=parent.plot_settings["vert_lines_width_isotopes"], hover=False)
+        _redraw_vline(parent, xlims, type = "sugg")
+        _redraw_vline(parent, xlims, type = "mass")
+        _redraw_vline(parent, xlims, type = "iso",
+)
 
 
 def redraw_localfit(parent,xlims):
@@ -224,14 +217,52 @@ class InfiniteLine_Mass(pg.InfiniteLine):
     deletable : True/False
     *args,**kwargs: arguments for pyqtgraph.InfiniteLin
     """
-    def __init__(self,Parent,hover=True, deletable = False, Type = "mass" ,*args,**kwargs):
+    def __init__(self,Parent, Pos=0, Type = "none", Label="",**kwargs):
         """
 
         """
         self.parent = Parent
-        super().__init__(*args,**kwargs)
-        self.hover = hover
-        self.delatable = deletable
+        self.type = Type
+        self.position = Pos
+        angle = 90
+        hoverPen = {"color": (0, 0, 0), "width": 2}
+        label = Label
+        labelOpts = {"position": 0,  # 0.8 - len(compound_name)* 0.01,
+                     "rotateAxis": (1, 0),
+                     "anchors": [(0, 0), (0, 0)]}
+        self.hover = False
+        self.delatable = False
+        self.movable = False
+        color = (0,0,0)
+        width = 1
+        if self.type == "sugg":
+            color = self.parent.plot_settings["vert_lines_color_suggestions"]
+            width = self.parent.plot_settings["vert_lines_width_suggestions"]
+            self.hover = True
+        if self.type == "mass":
+            color = self.parent.plot_settings["vert_lines_color_masslist"]
+            width = self.parent.plot_settings["vert_lines_width_masslist"]
+            self.hover = True
+            self.delatable = True
+            self.movable = True
+        if self.type == "iso":
+            color = self.parent.plot_settings["vert_lines_color_isotopes"]
+            width = self.parent.plot_settings["vert_lines_width_isotopes"]
+        if self.type == "highlight":
+            color = (0,0,0)
+            width = 2
+        if self.type == "mass_without_comp":
+            color = self.parent.plot_settings["vert_lines_color_masslist_without_composition"]
+            width = self.parent.plot_settings["vert_lines_width_masslist"]
+
+        pen = pg.mkPen(color, width=width)
+
+
+        if self.type == "none":
+            super().__init__(pos=self.position,label= label,labelOpts= labelOpts **kwargs)
+        else:
+            super().__init__(pos = self.position, angle = angle, pen = pen, movable = self.movable, hoverPen= hoverPen, label= label, labelOpts= labelOpts)
+
         self.vb = self.parent.spectrumplot.getViewBox()
         self.xlims, self.ylims = self.vb.viewRange()
         self.type = Type
@@ -239,6 +270,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         font.setPointSize(12)
         self.label.textItem.setFont(font)
         self.label.setColor([0,0,0])
+        print(f"Make {self.type} line with label {self.label.format}")
         if self.type == "sugg" and np.isclose(self.parent.ml.masslist.masses, self.value(), atol=0.0001).any():
             #if the sugg line is to close to another mass line donot show the label
             self.label.setColor([0, 0, 0, 0])
@@ -272,6 +304,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             if self.value() not in self.parent.ml.masslist.masses:
                 self.parent.ml.add_mass_to_masslist(self.parent, self.value())
                 self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_masslist"])
+                self.type
                 self.pen = self.penmasslist
                 redraw_localfit(self.parent,self.xlims)
                 self.update()

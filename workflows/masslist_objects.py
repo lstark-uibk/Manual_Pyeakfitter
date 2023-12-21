@@ -292,8 +292,7 @@ class Masslist():
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
 
                 pyqtgraph_objects.redraw_vlines(parent, xlims)
-                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, pos=mass, pen=pg.mkPen((0,0,0), width=2), Type = "sugg", hover = False, movable= False,
-                                                angle=90)
+                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, Pos=mass, Type = "highlight", Label = get_names_out_of_element_numbers(compoundelements))
 
                 # parent.ml.suggestions.current_lines.append(highlight_line)
                 parent.graphWidget.addItem(highlight_line)
@@ -632,11 +631,10 @@ def get_names_out_of_element_numbers(compound_array):
                 # before the last letter (H+) add a " "
                 if index == len(order_of_letters)-1:
                     if including_NH4: #if the compound includes a NH3 add a NH4+ instead of H+
-                        compoundletters += "NH4+"
+                        compoundletters += " NH4+"
                         break
                     else:
-                        compoundletters += " H+" #add a " " before the H+
-                        break
+                        compoundletters += " " #add a " " before the H+
                 if compound[order] == 0:
                     pass
                 if compound[order] == 1:
