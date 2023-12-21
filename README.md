@@ -10,6 +10,7 @@ To run Manual Pyeakfitter with a .exe file:
 - download the manual_pyeakfitter_distribution_windows.zip file. 
 - Unzip it
 - Run the manual_pyeakfitter.exe application
+- Make a shortcut to the application on your desktop =)
 
 ## Installation with Python
 Running the Manual Pyeakfitter from Python give acces to the latest developments and makes it able to contribute.
