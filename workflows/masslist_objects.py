@@ -107,15 +107,20 @@ def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersan
     sortperm = np.argsort(Masses)
     Masses = Masses[sortperm]
     Element_numbers = np.array(Element_numbers)[sortperm]
-
+    H_to_C_lower = 1.3
+    H_to_C_upper = 3.3
+    O_to_C_upper = 2
     if filtersanemasses:
         selMasses_mask = np.full(Masses.shape, True)
-        selMasses_mask = selMasses_mask & (Element_numbers[:, 2] > 1.3 * Element_numbers[:, 0]) | (Masses <40) # H:C > 1.3
-        selMasses_mask = selMasses_mask & (Element_numbers[:, 2] < 2.2 * Element_numbers[:, 0]) | (Masses <40) # H:C < 2.2
-        selMasses_mask = selMasses_mask & (Element_numbers[:, 5] < 2 * Element_numbers[:, 0]) | (Masses <40) # O:C < 1.5 # 2
-        # selMasses_mask = selMasses_mask or (Element_numbers[:, 5] < 2 * Element_numbers[:, 0])    # O:C < 1.5 # 2
+        selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] > H_to_C_lower * Element_numbers[:, 0]) | (Masses <40)) # H:C > 1.3 for masses over 40
+        including_NH4 = (Element_numbers[:, 5] >= 1) & (Element_numbers[:, 2] >= 3)
+        including_NH4_H_number_sub_4 = including_NH4 & (Element_numbers[:, 2] - 3 < H_to_C_upper * Element_numbers[:, 0])
+        selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] < H_to_C_upper * Element_numbers[:, 0]) | (Masses <40) | including_NH4_H_number_sub_4) # H:C <  3.3 for masses over 40 or H-3:C <  3.3 for compound including NH3H+
+        selMasses_mask = selMasses_mask & ((Element_numbers[:, 5] < O_to_C_upper * Element_numbers[:, 0]) | (Masses <40)) # O:C < 1.5 # 2
         Masses = Masses[selMasses_mask]
         Element_numbers = Element_numbers[selMasses_mask,:]
+        # Masses_thrown = Masses[~selMasses_mask]
+        # Element_numbers_thrown = Element_numbers[~selMasses_mask,:]
 
 
     return [Masses,Element_numbers],{"Mass_suggestions_ranges" : Mass_suggestions_range_numbers}
@@ -157,7 +162,7 @@ class _Data():
         # initialize masslist
         self.element_numbers = Element_numbers
         self.masses = Masses
-        self.current_element_names = []
+        # self.current_element_names = []
         self.current_lines = []
         self.mass_coefficients = np.full(Masses.shape[0],1.)
         self.isotopic_abundance = IsotopicAbundance
@@ -211,7 +216,7 @@ class Masslist():
     '''
 
     names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S", "I", "Si"] #iodine, silizium
-    order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
+    order_of_letters = [0, 1, 2, 8, 4, 5, 6, 7, 9, 3]
     masses_elements = np.array([12,
                                 13.00335,
                                 1.00783,
@@ -610,18 +615,28 @@ def get_names_out_of_element_numbers(compound_array):
     '''
 
     compoundname_list = []
-
-    for compound in compound_array:
+    compound_array_copy = compound_array.copy()
+    for compound in compound_array_copy:
         if len(compound_array.shape) == 1:
-            compound = compound_array
+            compound = compound_array_copy
         if np.any(compound):
             order_of_letters = Masslist.order_of_letters
             names_elements = Masslist.names_elements
             compoundletters = ""
+            including_NH4 = False
+            if compound[2] >= 3 and compound[4] >= 1:
+                including_NH4 = True
+                compound[2] = compound[2]-3
+                compound[4] = compound[3]-1
             for index, order in enumerate(order_of_letters):
                 # before the last letter (H+) add a " "
                 if index == len(order_of_letters)-1:
-                    compoundletters += " "
+                    if including_NH4: #if the compound includes a NH3 add a NH4+ instead of H+
+                        compoundletters += "NH4+"
+                        break
+                    else:
+                        compoundletters += " H+" #add a " " before the H+
+                        break
                 if compound[order] == 0:
                     pass
                 if compound[order] == 1:

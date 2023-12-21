@@ -20,6 +20,7 @@ def _redraw_vline(parent, xlims, massisosugg, color, width, type = "mass", hover
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
+            print(mass,element_numbers)
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
             #print in layer suggstions<isotopes<masslist
             if mass in parent.ml.suggestions.masses:
@@ -238,7 +239,9 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         font.setPointSize(12)
         self.label.textItem.setFont(font)
         self.label.setColor([0,0,0])
-
+        if self.type == "sugg" and np.isclose(self.parent.ml.masslist.masses, self.value(), atol=0.0001).any():
+            #if the sugg line is to close to another mass line donot show the label
+            self.label.setColor([0, 0, 0, 0])
 
     def hoverEvent(self, ev):
         if (not ev.isExit()) and ev.acceptDrags(QtCore.Qt.MouseButton.LeftButton) and self.hover:

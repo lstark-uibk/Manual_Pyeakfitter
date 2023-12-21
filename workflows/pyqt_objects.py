@@ -167,6 +167,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.parent = parent
 
+        self.instruction = QtWidgets.QLabel("Change ranges by editing the lines\n Input the range like: 1-3 & 5 & 7-10")
         line_edits = {}
         regex_validator = RegExpValidator(self)
         self.formlayout = QtWidgets.QFormLayout(self)
@@ -174,6 +175,8 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
 
         for i, key in enumerate(self.parent.ml.names_elements):
             line_edits[key] = QtWidgets.QLineEdit(self)
+            line_edits[key].returnPressed.connect(self.change_ranges)
+
             line_edits[key].setValidator(regex_validator)
             pretext = self.get_regexp_outoflist(self.parent.ml.mass_suggestions_numbers[key])
             line_edits[key].setText(pretext)
@@ -184,12 +187,37 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         collectbutton.clicked.connect(self.change_ranges)
         self.centralLayout.addWidget(collectbutton)
 
+        backtodefault = QtWidgets.QPushButton("Go back to default ranges")
+        backtodefault.clicked.connect(self.go_backtodefault)
+        self.centralLayout.addWidget(backtodefault)
+
+
+
         self.setCentralWidget(self.centralWidget)
+    def go_backtodefault(self):
+        mass_suggestions_numbers = {}
+        for i, key in enumerate(self.parent.ml.names_elements):
+            mass_suggestions_numbers[key] = list(
+                range(self.parent.ml.mass_suggestions_ranges[i][0], self.parent.ml.mass_suggestions_ranges[i][1] + 1))
+        self.parent.ml.mass_suggestions_numbers = mass_suggestions_numbers
+        pyqtgraph_objects.remove_all_vlines(self.parent)
+        self.parent.ml.reinit(self.parent.filename)
+        xlims, ylims = self.parent.vb.viewRange()
+        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
+        print("Go back to default Suggestions")
+        print(self.parent.ml.mass_suggestions_numbers)
+        print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
+        for row in range(self.formlayout.count()):
+            label_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.LabelRole)
+            field_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.FieldRole)
+            if field_item:
+                element = label_item.widget().text()
+                field_item.widget().setText(self.get_regexp_outoflist(self.parent.ml.mass_suggestions_numbers[element]))
 
     def change_ranges(self):
         #read in the mass suggestion numbers, that are put in
         mass_suggestions_numbers = {}
-        for row in range(self.formlayout.count()-1):
+        for row in range(self.formlayout.count()):
             label_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.LabelRole)
             field_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.FieldRole)
             if field_item:
@@ -221,13 +249,13 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
                         mass_suggestions_numbers[element].append(0)
                 mass_suggestions_numbers[element] = list(set(mass_suggestions_numbers[element]))
         #assign them to the ml object
-        self.parent.ml.mass_suggestions_ranges = mass_suggestions_numbers
+        self.parent.ml.mass_suggestions_numbers = mass_suggestions_numbers
         pyqtgraph_objects.remove_all_vlines(self.parent)
         self.parent.ml.reinit(self.parent.filename)
         xlims, ylims = self.parent.vb.viewRange()
         pyqtgraph_objects.redraw_vlines(self.parent, xlims)
         print("change the input ranges to")
-        print(self.parent.ml.mass_suggestions_ranges)
+        print(self.parent.ml.mass_suggestions_numbers)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
 
     def get_regexp_outoflist(self, sugg_numbers):
@@ -257,6 +285,13 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
                     string = string + f"{x[0]}"
             return string
             print(string)
+
+
+class Show_suggestions(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(AddnewElement, self).__init__(parent)
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
