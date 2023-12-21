@@ -3,7 +3,18 @@ Anaylze TOF spectra averaged by TOF-Tracer (https://github.com/lukasfischer83/TO
 
 Rewritten Python version of Manual Peak Fitter by Lukas Fischer (https://github.com/lukasfischer83/peakFit) using PyQt5 (https://www.riverbankcomputing.com/software/pyqt/) and pyqtgraph (https://pyqtgraph.readthedocs.io/en/latest/)
 
-## Requirements
+## Installation with .exe file
+It is possible to run the program from a .exe file from windows. This is most often not the newest Version and the current development is done in the python files of this repository. 
+
+To run Manual Pyeakfitter with a .exe file:
+- download the manual_pyeakfitter_distribution_windows.zip file. 
+- Unzip it
+- Run the manual_pyeakfitter.exe application
+
+## Installation with Python
+Running the Manual Pyeakfitter from Python give acces to the latest developments and makes it able to contribute.
+
+### Requirements
 Latest running on Python  3.11.4 
 
 Needs packages:
@@ -14,7 +25,7 @@ Latest running versions:
 - h5py   3.9.0 
 - pyqtgraph 0.13.1
 
-## Installation
+### Installation
 On Pycharm with Git installed, add this project by Git -> Clone... -> Repository URL.
 Insert the url: https://github.com/lstark-uibk/Manual_Pyeakfitter and select the directory you want to save it in.
 
