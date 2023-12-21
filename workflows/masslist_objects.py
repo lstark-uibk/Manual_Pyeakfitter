@@ -116,6 +116,7 @@ def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersan
         selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] > H_to_C_lower * Element_numbers[:, 0]) | (Masses <40)) # H:C > 1.3 for masses over 40
         including_NH4 = (Element_numbers[:, 5] >= 1) & (Element_numbers[:, 2] >= 3)
         including_NH4_H_number_sub_4 = including_NH4 & (Element_numbers[:, 2] - 3 < H_to_C_upper * Element_numbers[:, 0])
+        selMasses_mask = selMasses_mask & (Element_numbers[:, 3] == 1) # only include compounds which have a H+ in it
         selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] < H_to_C_upper * Element_numbers[:, 0]) | (Masses <40) | including_NH4_H_number_sub_4) # H:C <  3.3 for masses over 40 or H-3:C <  3.3 for compound including NH3H+
         selMasses_mask = selMasses_mask & ((Element_numbers[:, 5] < O_to_C_upper * Element_numbers[:, 0]) | (Masses <40)) # O:C < 1.5 # 2
         Masses = Masses[selMasses_mask]
