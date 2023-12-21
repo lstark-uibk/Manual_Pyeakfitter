@@ -6,28 +6,82 @@ import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.masslist_objects as mo
 from PyQt5.QtCore import Qt
 import configparser
-
+import os
+import sys
 #menu functions
 
-def save_filepath(filepath):
-    config = configparser.ConfigParser()
-    config['Settings'] = {'Filepath': filepath}
+class Config():
+    def __init__(self):
 
-    with open('config.ini', 'w') as configfile:
-        config.write(configfile)
+        self.config = configparser.ConfigParser()
+        self.config_path = self.get_config_path()
+        sections_and_keys = {
+            'filepaths': {
+                'filepath_lastreadin': '',
+            },
+            'ranges': {
+                'lastrangesettings': '',
+            }
+        }
+        if not os.path.exists(self.config_path):
+            print("Create new config file")
+            self.create_config_file(self.config_path,sections_and_keys)
 
+    def get_config_path(self):
+        # Check if the script is bundled with PyInstaller
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # Get the path to the bundled INI file
+            return os.path.join(sys._MEIPASS, 'config.ini')
+        else:
+            # Use the relative path if running from the source code
+            return 'config.ini'
 
-# Example usage
-filepath_to_save = '/path/to/your/file.txt'
-save_filepath(filepath_to_save)
+    def create_config_file(self, config_file_path, sections_and_keys):
+        # Create a ConfigParser instance
+        config = configparser.ConfigParser()
+
+        # Add sections and keys to the ConfigParser instance
+        for section, keys in sections_and_keys.items():
+            config.add_section(section)
+            for key, value in keys.items():
+                config.set(section, key, str(value))
+        print(f"Create a config file at {config_file_path}")
+        # Write the configuration to the file
+        with open(config_file_path, 'w') as configfile:
+            config.write(configfile)
+    def save_to_config(self,section,key,value):
+        try:
+            config = configparser.ConfigParser()
+            config.read(self.config_path)
+            config.set(section, key, str(value))
+
+            # Write the changes back to the file
+            with open(self.config_path, 'w') as configfile:
+                config.write(configfile)
+        except:
+            print("Couldnot write to config file")
+    def read_from_config(self,section,key):
+        try:
+            config = configparser.ConfigParser()
+            config.read(self.config_path)
+            value = config.get(section,key)
+            print(f"read in .ini from {self.config_path} for {section}, {key}: {value} ")
+            return value
+        except:
+            print("Couldnot read config file")
+            return ""
+
 def open_file(parent):
     # show the dialog
+    co = Config()
+    filepath_lastreadin = co.read_from_config("filepaths","filepath_lastreadin")
+    print(filepath_lastreadin)
     dialog = QtWidgets.QFileDialog()
-    filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
+    filepath, filter = dialog.getOpenFileName(None, "Window name", filepath_lastreadin, "HDF5_files (*.hdf5)")
+    co.save_to_config("filepaths","filepath_lastreadin",filepath)
     # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
     print(f"Try to read in data from {filepath}")
     parent.filename = filepath
-
     if filepath:
         if parent.plot_added:
             print("remove old plot stuff")
@@ -222,7 +276,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
                 range(self.parent.ml.mass_suggestions_ranges[i][0], self.parent.ml.mass_suggestions_ranges[i][1] + 1))
         self.parent.ml.mass_suggestions_numbers = mass_suggestions_numbers
         pyqtgraph_objects.remove_all_vlines(self.parent)
-        self.parent.ml.reinit(self.parent.filename)
+        self.parent.ml.reinit_old_sugg_ranges()
         xlims, ylims = self.parent.vb.viewRange()
         pyqtgraph_objects.redraw_vlines(self.parent, xlims)
         print("Go back to default Suggestions")
@@ -272,12 +326,14 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         #assign them to the ml object
         self.parent.ml.mass_suggestions_numbers = mass_suggestions_numbers
         pyqtgraph_objects.remove_all_vlines(self.parent)
-        self.parent.ml.reinit(self.parent.filename)
+        self.parent.ml.reinit_suggestions()
         xlims, ylims = self.parent.vb.viewRange()
         pyqtgraph_objects.redraw_vlines(self.parent, xlims)
         print("change the input ranges to")
         print(self.parent.ml.mass_suggestions_numbers)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
+        co = Config()
+        co.save_to_config("ranges", "lastrangesettings", mass_suggestions_numbers)
 
     def get_regexp_outoflist(self, sugg_numbers):
         result = []

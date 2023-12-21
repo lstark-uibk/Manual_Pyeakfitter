@@ -254,10 +254,11 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             color = (0,0,0)
             width = 2
         if self.type == "mass_without_comp":
-            color = self.parent.plot_settings["vert_lines_color_isotopes"]
-            width = self.parent.plot_settings["vert_lines_width_isotopes"]
-            # color = self.parent.plot_settings["vert_lines_color_masslist_without_composition"]
-            # width = self.parent.plot_settings["vert_lines_width_masslist"]
+            color = self.parent.plot_settings["vert_lines_color_masslist_without_composition"]
+            width = self.parent.plot_settings["vert_lines_width_masslist"]
+            self.hover = True
+            self.delatable = True
+            self.movable = True
 
         pen = pg.mkPen(color, width=width)
 

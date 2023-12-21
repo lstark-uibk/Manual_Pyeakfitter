@@ -8,7 +8,7 @@ import sys
 import workflows.masslist_objects as mo
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.pyqt_objects as po
-
+import configparser
 
 class Worker(QRunnable):
     '''
@@ -346,8 +346,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    main = MainWindow()
-    main.show()
+    mainW = MainWindow()
+    mainW.show()
     sys._excepthook = sys.excepthook
 
     def exception_hook(exctype, value, traceback):

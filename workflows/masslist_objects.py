@@ -7,7 +7,7 @@ import workflows.pyqt_objects as po
 import pyqtgraph as pg
 import PyQt5.QtCore as QtCore
 import PyQt5.QtWidgets as QtWidgets
-import timeit
+import ast
 import re
 
 def _load_masslist(Filename, nr_elements_masslistproposed):
@@ -230,10 +230,16 @@ class Masslist():
                                 27.9763
                                ])
     mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 1), (0, 1), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
-    mass_suggestions_numbers = {}
-    for i,key in enumerate(names_elements):
-        mass_suggestions_numbers[key] = list(range(mass_suggestions_ranges[i][0],mass_suggestions_ranges[i][1]+1))
-    # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
+    co = po.Config()
+    old_mass_suggestions_numbers = co.read_from_config("ranges", "lastrangesettings")
+    try:
+        old_mass_suggestions_numbers = ast.literal_eval(old_mass_suggestions_numbers)
+        mass_suggestions_numbers = old_mass_suggestions_numbers
+    except:
+        mass_suggestions_numbers = {}
+        for i,key in enumerate(names_elements):
+            mass_suggestions_numbers[key] = list(range(mass_suggestions_ranges[i][0],mass_suggestions_ranges[i][1]+1))
+        # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
     nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
     nr_elements = len(names_elements)
@@ -245,8 +251,13 @@ class Masslist():
         args, kwargs = _load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
         self.isotopes = _Data(*args, **kwargs)
         self.currently_hovered = []
-
-    def reinit(self, Filename):
+    def reinit_old_sugg_ranges(self):
+        self.mass_suggestions_numbers = {}
+        for i, key in enumerate(self.names_elements):
+            self.mass_suggestions_numbers[key] = list(
+                range(self.mass_suggestions_ranges[i][0], self.mass_suggestions_ranges[i][1] + 1))
+        self.reinit_suggestions()
+    def reinit_suggestions(self):
         '''Reinitiate the basket object
 
         Parameters
@@ -258,7 +269,8 @@ class Masslist():
         -------
         None
         '''
-        self.__init__(Filename)
+        args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
+        self.suggestions = _Data(*args, **kwargs)
 
     def add_suggestion_to_sugglist(self, parent, compoundelements):
         '''Add a new compound to the suggestion _Data object, redraw the InfinitLineMass objects, so that it will be shown on the plot and zoom to the mass of the compound
