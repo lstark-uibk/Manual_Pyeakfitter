@@ -5,23 +5,47 @@ import re
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.masslist_objects as mo
 from PyQt5.QtCore import Qt
+import configparser
 
 #menu functions
+
+def save_filepath(filepath):
+    config = configparser.ConfigParser()
+    config['Settings'] = {'Filepath': filepath}
+
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+
+
+# Example usage
+filepath_to_save = '/path/to/your/file.txt'
+save_filepath(filepath_to_save)
 def open_file(parent):
     # show the dialog
-    # dialog = QtWidgets.QFileDialog()
-    # filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
-    filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
+    dialog = QtWidgets.QFileDialog()
+    filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
+    # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
+    print(f"Try to read in data from {filepath}")
     parent.filename = filepath
 
     if filepath:
-        if parent.file_loaded:
+        if parent.plot_added:
             print("remove old plot stuff")
             pyqtgraph_objects.remove_all_plot_items(parent)
-        parent.init_basket_objects()
+        try:
+            parent.init_basket_objects()
+        except:
+            print(f"Error reading in data")
+            msg_box = QtWidgets.QMessageBox()
+            msg_box.setIcon(QtWidgets.QMessageBox.Critical)
+            msg_box.setWindowTitle("Error")
+            msg_box.setText(".h5 File not readable, try it maybe with an average only file.")
+            msg_box.exec_()
+            open_file(parent)
+        parent.file_loaded = True
         parent.init_UI_file_loaded()
         parent.init_plots()
-        parent.file_loaded = True
+
 
 class QHSeparationLine(QtWidgets.QFrame):
   '''
@@ -113,13 +137,11 @@ class AddnewElement(QtWidgets.QMainWindow):
 
         self.setCentralWidget(self.centralWidget)
     def add_compound(self,compoundstring):
-        print(compoundstring)
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
         self.parent.jump_to_mass(float(mass))
         if not (self.parent.ml.suggestions.element_numbers == compound).all(axis=1).any():
             self.parent.ml.add_suggestion_to_sugglist(self.parent, compound)
         self.showmass_label.setText(f"{mass}")
-        print(mass, compound)
 
     def addElement(self):
         compoundarray = [0]*len(self.parent.ml.names_elements)
@@ -128,7 +150,6 @@ class AddnewElement(QtWidgets.QMainWindow):
                 compoundarray[index] = 0
             else:
                 compoundarray[index] = int(self.compound_inquiry[compound].text())
-        print(compoundarray)
         compoundarray = np.array(compoundarray)
         self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
 
@@ -274,7 +295,6 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         for i, x in enumerate(result):
             if i < len(result) - 1:
                 if len(x) > 1:
-                    print(x[0])
                     string = string + f"{x[0]} - {x[-1]} & "
                 else:
                     string = string + f"{x[0]} & "
@@ -284,7 +304,6 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
                 else:
                     string = string + f"{x[0]}"
             return string
-            print(string)
 
 
 class Show_suggestions(QtWidgets.QMainWindow):

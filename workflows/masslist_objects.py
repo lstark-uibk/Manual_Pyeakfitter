@@ -3,9 +3,10 @@ import math
 import h5py
 import itertools
 import workflows.pyqtgraph_objects as pyqtgraph_objects
-
+import workflows.pyqt_objects as po
 import pyqtgraph as pg
 import PyQt5.QtCore as QtCore
+import PyQt5.QtWidgets as QtWidgets
 import timeit
 import re
 
@@ -447,8 +448,8 @@ class Spectrum():
 
     '''
 
-    def __init__(self, filename):
-        subspectra_limit=100
+    def __init__(self, filename, parent):
+        subspectra_limit=50
         with h5py.File(filename, "r") as f:
             self.sum_specs_ds = f["SumSpecs"]
             if self.sum_specs_ds.shape[0] > subspectra_limit:
@@ -480,7 +481,6 @@ class Spectrum():
         self.current_local_fit = []
         self.current_local_fit_init = False
         self.current_local_fit_masses = []
-
     def make_singlepeak(self, mass, massaxis_this_zoom):
         '''Make a single peak around a given mass with given massaxis points and interpolated peakshape to the given mass
 

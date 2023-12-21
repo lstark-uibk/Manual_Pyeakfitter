@@ -29,14 +29,14 @@ def _redraw_vline(parent, xlims, type = "mass"):
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
-            print(mass, element_numbers)
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
             label = compound_name
+            print(mass, element_numbers, compound_name)
             #print in layer suggstions<isotopes<masslist
             if np.any(element_numbers):
                 sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= label)
             else:
-                sugisomass_line = InfiniteLine_Mass(parent, pos=mass, Type = "mass_without_comp", Label= compound_name)
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type = "mass_without_comp", Label= compound_name)
             sugisomass_line.setZValue(z)
             parent.graphWidget.addItem(sugisomass_line)
             massisosugg.current_lines.append(sugisomass_line)
@@ -254,8 +254,10 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             color = (0,0,0)
             width = 2
         if self.type == "mass_without_comp":
-            color = self.parent.plot_settings["vert_lines_color_masslist_without_composition"]
-            width = self.parent.plot_settings["vert_lines_width_masslist"]
+            color = self.parent.plot_settings["vert_lines_color_isotopes"]
+            width = self.parent.plot_settings["vert_lines_width_isotopes"]
+            # color = self.parent.plot_settings["vert_lines_color_masslist_without_composition"]
+            # width = self.parent.plot_settings["vert_lines_width_masslist"]
 
         pen = pg.mkPen(color, width=width)
 
@@ -272,7 +274,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         font.setPointSize(12)
         self.label.textItem.setFont(font)
         self.label.setColor([0,0,0])
-        print(f"Make {self.type} line with label {self.label.format}")
+        print(f"Make {self.type} line at {self.position} with label {self.label.format}")
 
 
     def hoverEvent(self, ev):
@@ -297,7 +299,6 @@ class InfiniteLine_Mass(pg.InfiniteLine):
 
 
     def mouseClickEvent(self, ev):
-        print(ev)
         self.sigClicked.emit(self, ev)
         if ev.button() == QtCore.Qt.MouseButton.LeftButton and self.hover:
             print("try to add mass", self.value())

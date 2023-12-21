@@ -51,6 +51,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
         self.filename = None
         self.savefilename = None
+        self.plot_added = False
         self.file_loaded = False
         self.init_Ui_file_not_loaded()
 
@@ -154,7 +155,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
-        self.sp = mo.Spectrum(self.filename)
+        self.sp = mo.Spectrum(self.filename,self)
         self.ml = mo.Masslist(self.filename)
         self.plot_settings = {"font" : QtGui.QFont('Calibri', 11),
                               "vert_lines_color_suggestions": (97, 99, 102,70),
@@ -241,7 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.addLegend()
         # make bg plots
         pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])
-
+        self.plot_added = True
         # set the restrictions on the movement
         self.vb = self.spectrumplot.getViewBox()
         self.vb.setXRange(1,20)
