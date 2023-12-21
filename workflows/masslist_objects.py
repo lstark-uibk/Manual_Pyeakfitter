@@ -82,7 +82,7 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
         IsotopeMass[2] = mass - 15.99492 + 17.99916
         n, k = (int(element_composition[5]), 1)
         IsotopicAbundance[2] = math.comb(n, k) * 0.00205      #abundance out of https://en.wikipedia.org/wiki/Isotopes_of_oxygen
-        Isotope_Elemental_compositions[2, :] = element_composition - [1 if i == 5 else 0 for i in range(0,nr_elements)] + [2 if i == 6 else 0 for i in range(0,nr_elements)]
+        Isotope_Elemental_compositions[2, :] = element_composition - [1 if i == 5 else 0 for i in range(0,nr_elements)] + [1 if i == 6 else 0 for i in range(0,nr_elements)]
 
     return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
 
@@ -638,13 +638,12 @@ def get_names_out_of_element_numbers(compound_array):
             if compound[2] >= 3 and compound[4] >= 1:
                 including_NH4 = True
                 compound[2] = compound[2]-3
-                compound[4] = compound[3]-1
+                compound[4] = compound[4]-1
             for index, order in enumerate(order_of_letters):
                 # before the last letter (H+) add a " "
                 if index == len(order_of_letters)-1:
                     if including_NH4: #if the compound includes a NH3 add a NH4+ instead of H+
-                        compoundletters += " NH4+"
-                        break
+                        compoundletters += " NH3"
                     else:
                         compoundletters += " " #add a " " before the H+
                 if compound[order] == 0:
