@@ -29,10 +29,12 @@ def _redraw_vline(parent, xlims, type = "mass"):
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
+            print(mass, element_numbers)
             compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
+            label = compound_name
             #print in layer suggstions<isotopes<masslist
             if np.any(element_numbers):
-                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= compound_name)
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= label)
             else:
                 sugisomass_line = InfiniteLine_Mass(parent, pos=mass, Type = "mass_without_comp", Label= compound_name)
             sugisomass_line.setZValue(z)
@@ -271,9 +273,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         self.label.textItem.setFont(font)
         self.label.setColor([0,0,0])
         print(f"Make {self.type} line with label {self.label.format}")
-        if self.type == "sugg" and np.isclose(self.parent.ml.masslist.masses, self.value(), atol=0.0001).any():
-            #if the sugg line is to close to another mass line donot show the label
-            self.label.setColor([0, 0, 0, 0])
+
 
     def hoverEvent(self, ev):
         if (not ev.isExit()) and ev.acceptDrags(QtCore.Qt.MouseButton.LeftButton) and self.hover:
@@ -303,11 +303,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             print("try to add mass", self.value())
             if self.value() not in self.parent.ml.masslist.masses:
                 self.parent.ml.add_mass_to_masslist(self.parent, self.value())
-                self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_masslist"])
-                self.type
-                self.pen = self.penmasslist
                 redraw_localfit(self.parent,self.xlims)
-                self.update()
             else:
                 print("is already in ml")
 
@@ -315,8 +311,6 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             print("try to delete mass", self.value())
             if self.value() in self.parent.ml.masslist.masses :
                 self.parent.ml.delete_mass_from_masslist(self.parent, self.value())
-                # self.penmasslist = fn.mkPen(self.parent.plot_settings["vert_lines_color_default"])
-                self.pen = fn.mkPen(0.5)
                 redraw_localfit(self.parent,self.xlims)
             else:
                 print("This mass is not already in Masslist to delete")
