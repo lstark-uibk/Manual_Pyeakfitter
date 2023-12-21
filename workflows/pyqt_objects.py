@@ -76,8 +76,13 @@ def open_file(parent):
     co = Config()
     filepath_lastreadin = co.read_from_config("filepaths","filepath_lastreadin")
     print(filepath_lastreadin)
-    dialog = QtWidgets.QFileDialog()
-    filepath, filter = dialog.getOpenFileName(None, "Window name", filepath_lastreadin, "HDF5_files (*.hdf5)")
+    try:
+        dialog = QtWidgets.QFileDialog()
+        filepath, filter = dialog.getOpenFileName(None, "Window name", filepath_lastreadin, "HDF5_files (*.hdf5)")
+    except:
+        print("Old filepath not reachable")
+        dialog = QtWidgets.QFileDialog()
+        filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
     co.save_to_config("filepaths","filepath_lastreadin",filepath)
     # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
     print(f"Try to read in data from {filepath}")

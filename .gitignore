@@ -1,2 +1,5 @@
 /tests.py
 /tests2.py
+/workflows/config.ini
+/dist/
+/build/
