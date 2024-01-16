@@ -512,22 +512,23 @@ class Spectrum():
             new peakshape around mass
 
         '''
-        peakshape_index = int(
-            [i for i in range(len(self.peakshapeborders) - 1) if self.peakshapeborders[i] < mass < self.peakshapeborders[i + 1]][0])
+        peakshape_index_low = min(range(len(self.peakshapemiddle)), key=lambda i: abs(self.peakshapemiddle[i] - mass) if self.peakshapemiddle[i] < mass else float('inf'))
         ind_peak, deviation = self._find_nearest(self.massaxis, mass)
         lowind = ind_peak - 200
         highind = ind_peak + 201
         peakshape_massaxis_this_mass = self.massaxis[lowind:highind] -deviation
-        if mass < self.peakshapeborders[0] or self.peakshapeborders[-1]:
-            peakshape_this = self.peakshape[peakshape_index]
+        print(mass,self.peakshapeborders,peakshape_index_low)
+        if mass < self.peakshapemiddle[0] or mass > self.peakshapemiddle[-1]:
+            peakshape_this = self.peakshape[peakshape_index_low]
         else:
             # the mass is between peakshape_index and peakshape_index + 1
-            dx = mass - self.peakshapeborders[peakshape_index]
-            d = self.peakshapeborders[peakshape_index] - self.peakshapeborders[peakshape_index + 1]
-            fact = dx/d #this factor is 0 if mass is near the lower bound and 1 if it is near the lower bound
-            peakshape_this = np.empty(self.peakshape[peakshape_index].shape)
-            for i in range(peakshape_this.size):
-                peakshape_this =np.append(peakshape_this, self.peakshape[i] * fact + self.peakshape[i+1] * (1 - fact))
+            dx = mass - self.peakshapemiddle[peakshape_index_low]
+            print(f"dx {dx}")
+            d = self.peakshapemiddle[peakshape_index_low + 1] - self.peakshapemiddle[peakshape_index_low]
+            print(f"d {d}")
+            fact = dx/d #this factor is 0 if mass is near the lower bound and 1 if it is near the higher bound
+            print(f"fact {fact} between {self.peakshapemiddle[peakshape_index_low]}, {self.peakshapemiddle[peakshape_index_low +1]}")
+            peakshape_this = self.peakshape[peakshape_index_low] * (1-fact) + self.peakshape[peakshape_index_low + 1] * fact
         peakshape_interpolated = np.interp(massaxis_this_zoom, peakshape_massaxis_this_mass, peakshape_this,left= 0, right= 0)
 
         return massaxis_this_zoom, peakshape_interpolated
@@ -743,4 +744,4 @@ def get_element_numbers_out_of_names(namestring):
     return mass, compound_array
 
 
-ml = Masslist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")
+# ml = Masslist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")
