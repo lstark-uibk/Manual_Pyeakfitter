@@ -287,8 +287,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                                 "Save File", defaultsavefilename, "csv_files(*.csv)",
                                                                 options=options)
-
-        head = "# Elements: \nC	C(13)	H	H+	N	O	O(18)	S\n	C					O\n12	13.003355	1.007825	1.007276	14.003074	15.994915	17.99916	31.97207\n\n# Masses: \nC	C(13)	H	H+	N	O	O(18)	S	Mass	Name\n"
+        head = "# Elements: "
+        head += "\n"
+        for element in self.ml.names_elements:
+            head += f"{element}\t"
+        head += "\n\n"
+        for mass in self.ml.masses_elements:
+            head += f"{mass}\t"
+        head += "\n\n"
+        head += "#Masses: \n"
+        for element in self.ml.names_elements:
+            head += f"{element}\t"
+        head += "Mass\t"
+        head += "Name\n"
         with open(self.savefilename, "w") as file:
             file.write(head)
         element_names = np.empty(self.ml.masslist.masses.size,dtype=object)
@@ -296,7 +307,7 @@ class MainWindow(QtWidgets.QMainWindow):
             element_names[index] = mo.get_names_out_of_element_numbers(row)
         # problem strings und numbers -> pandas
         data = pd.DataFrame(np.c_[self.ml.masslist.element_numbers, self.ml.masslist.masses])
-        data.insert(9,"names",element_names)
+        data.insert(len(data.columns),"names",element_names)
         data.to_csv(self.savefilename, mode='a', sep='\t', index=False, header=False)
 
         print("Saved Masslist to", self.savefilename)

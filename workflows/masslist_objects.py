@@ -663,6 +663,20 @@ def get_names_out_of_element_numbers(compound_array):
 
     return compoundname_list
 
+def sort_on_isotope(list):
+    """
+
+    Parameters
+    ----------
+    list of element names e.g. ["C",C(13)"]
+
+    Returns
+    -------
+    list with non isotope names, list with isotope names
+    """
+    isotopes = [element for element in list if any(char.isdigit() for char in element)]
+    non_isotopes = [element for element in list if not any(char.isdigit() for char in element)]
+    return  non_isotopes, isotopes
 
 def get_element_numbers_out_of_names(namestring):
     '''Get the compound name out of a compound array
@@ -729,3 +743,4 @@ def get_element_numbers_out_of_names(namestring):
     return mass, compound_array
 
 
+ml = Masslist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")
