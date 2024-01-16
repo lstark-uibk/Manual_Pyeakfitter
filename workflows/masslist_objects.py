@@ -517,17 +517,14 @@ class Spectrum():
         lowind = ind_peak - 200
         highind = ind_peak + 201
         peakshape_massaxis_this_mass = self.massaxis[lowind:highind] -deviation
-        print(mass,self.peakshapeborders,peakshape_index_low)
         if mass < self.peakshapemiddle[0] or mass > self.peakshapemiddle[-1]:
             peakshape_this = self.peakshape[peakshape_index_low]
         else:
             # the mass is between peakshape_index and peakshape_index + 1
             dx = mass - self.peakshapemiddle[peakshape_index_low]
-            print(f"dx {dx}")
             d = self.peakshapemiddle[peakshape_index_low + 1] - self.peakshapemiddle[peakshape_index_low]
-            print(f"d {d}")
             fact = dx/d #this factor is 0 if mass is near the lower bound and 1 if it is near the higher bound
-            print(f"fact {fact} between {self.peakshapemiddle[peakshape_index_low]}, {self.peakshapemiddle[peakshape_index_low +1]}")
+            # print(f"fact {fact} between {self.peakshapemiddle[peakshape_index_low]}, {self.peakshapemiddle[peakshape_index_low +1]}")
             peakshape_this = self.peakshape[peakshape_index_low] * (1-fact) + self.peakshape[peakshape_index_low + 1] * fact
         peakshape_interpolated = np.interp(massaxis_this_zoom, peakshape_massaxis_this_mass, peakshape_this,left= 0, right= 0)
 
