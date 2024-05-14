@@ -169,9 +169,16 @@ class _Data():
         self.mass_coefficients = np.full(Masses.shape[0],1.)
         self.isotopic_abundance = IsotopicAbundance
         self.mass_suggestions_ranges = Mass_suggestions_ranges
+def read_masslist_from_hdf5_produce_iso_sugg(Filename):
+    '''disentagle masslist read in from .hdf5 and production of sugg and iso so that import of ml is possible'''
+    names_elements = Mass_iso_sugglist.names_elements #iodine, silizium
+    nr_elements = len(names_elements)
+    masslist = _Data(*_load_masslist(Filename, nr_elements))
 
+    ml = Mass_iso_sugglist(masslist)
+    return ml
 
-class Masslist():
+class Mass_iso_sugglist():
     '''
     Basket object for Suggestions, Masslist and Isotopes and all functions that alter these
     -to add a new element to suggest, change the variables names_elements masses_elements mass_suggestions_ranges with the information on the compound
@@ -244,11 +251,10 @@ class Masslist():
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
     nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
     nr_elements = len(names_elements)
-    def __init__(self, Filename):
-        self.filename = Filename
+    def __init__(self, masslist):
         args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
         self.suggestions = _Data(*args, **kwargs)
-        self.masslist = _Data(*_load_masslist(Filename, self.nr_elements))
+        self.masslist = masslist
         args, kwargs = _load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
         self.isotopes = _Data(*args, **kwargs)
         self.currently_hovered = []
@@ -630,8 +636,8 @@ def get_names_out_of_element_numbers(compound_array):
         if len(compound_array.shape) == 1:
             compound = compound_array_copy
         if np.any(compound):
-            order_of_letters = Masslist.order_of_letters
-            names_elements = Masslist.names_elements
+            order_of_letters = Mass_iso_sugglist.order_of_letters
+            names_elements = Mass_iso_sugglist.names_elements
             compoundletters = ""
             including_NH4 = False
             if compound[2] >= 3 and compound[4] >= 1:
@@ -729,7 +735,7 @@ def get_element_numbers_out_of_names(namestring):
 
     elementsinstring_lower = np.array([x.lower() for x in elements], dtype = 'str')
 
-    names_elements = Masslist.names_elements
+    names_elements = Mass_iso_sugglist.names_elements
     compound_array = np.array([0] * len(names_elements))
     for index,element in enumerate(names_elements):
         #make it lower, so that we have more freedom in writing
@@ -737,8 +743,8 @@ def get_element_numbers_out_of_names(namestring):
         if np.any(element_lower == elementsinstring_lower):
             compound_array[index] = numbers[element_lower == elementsinstring_lower]
 
-    mass = np.sum(compound_array*Masslist.masses_elements)
+    mass = np.sum(compound_array*Mass_iso_sugglist.masses_elements)
     return mass, compound_array
 
 
-# ml = Masslist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")
+# ml = Mass_iso_sugglist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")

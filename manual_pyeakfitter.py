@@ -116,10 +116,17 @@ class MainWindow(QtWidgets.QMainWindow):
         openfile.triggered.connect(lambda: po.open_file(self))
         self.actionFile.addAction(openfile)
 
-        self.savecsv = QtWidgets.QAction("Save Masslist", self)
+        self.importmasslist = QtWidgets.QAction("Import Masslist for .csv", self)
+        self.importmasslist.setShortcut("Ctrl+I")
+        self.actionFile.addAction(self.importmasslist)
+
+        self.showmasslist = QtWidgets.QAction("Show total masslist with isotopes", self)
+        self.actionFile.addAction(self.showmasslist)
+
+        self.savecsv = QtWidgets.QAction("Save Masslist to .csv", self)
         self.savecsv.setShortcut("Ctrl+S")
         self.actionFile.addAction(self.savecsv)
-        self.saveascsv = QtWidgets.QAction("Save Masslist as new file", self)
+        self.saveascsv = QtWidgets.QAction("Save Masslist as new .csv file", self)
         self.saveascsv.setShortcut("Ctrl+Alt+S")
         self.actionFile.addAction(self.saveascsv)
 
@@ -156,7 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
         self.sp = mo.Spectrum(self.filename,self)
-        self.ml = mo.Masslist(self.filename)
+        self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         self.plot_settings = {"font" : QtGui.QFont('Calibri', 11),
                               "vert_lines_color_suggestions": (97, 99, 102,70),
                               "vert_lines_color_masslist": (38, 135, 20),
@@ -217,6 +224,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # save to csv in menubar
         self.saveascsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = True))
         self.savecsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = False))
+        self.importmasslist.triggered.connect(self.importmasslist_fn)
+        self.showmasslist.triggered.connect(self.showmasslist_fn)
+
 
     def printsugg(self):
         xlims, ylims = self.vb.viewRange()
@@ -280,6 +290,69 @@ class MainWindow(QtWidgets.QMainWindow):
                 pyqtgraph_objects.redraw_localfit(self,xlims)
             worker = Worker(to_worker)
             self.threadpool.start(worker)
+    def importmasslist_fn(self):
+        print("Import")
+        # get filepath of masslist to import
+        co = po.Config()
+        filepath_lastreadin = co.read_from_config("filepaths", "filepath_last_import_masslist")
+        try:
+            dialog = QtWidgets.QFileDialog()
+            filepath, filter = dialog.getOpenFileName(None, "Window name", filepath_lastreadin, "csv masslist files formatted in the right way (*.csv)")
+        except:
+            print("Old filepath not reachable")
+            dialog = QtWidgets.QFileDialog()
+            filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
+        co.save_to_config("filepaths", "filepath_last_import_masslist", filepath)
+        # filepath = "D:\\Uniarbeit 23_11_09\\CERN\\CLOUD16\\arctic_runs\\2023-11-13\\results\\_result_avg.hdf5"
+        print(f"Try to read in Masslist data from {filepath}")
+        if filepath:
+            # question overwrite or merge
+            decision_dialog = QtWidgets.QMessageBox()
+            decision_dialog.setWindowTitle('Import Masslist from .csv')
+            decision_dialog.setText("How do I handle the old Masslist?")
+            decision_dialog.setIcon(QtWidgets.QMessageBox.Question)
+
+            overwrite = decision_dialog.addButton("Overwrite current masslist", QtWidgets.QMessageBox.YesRole)
+            merge = decision_dialog.addButton("Merge with current masslist", QtWidgets.QMessageBox.NoRole)
+
+            decision_dialog.exec_()
+            merge_with_old_ml = False
+            if decision_dialog.clickedButton() == merge:
+                merge_with_old_ml = True
+
+            # load the data
+            with open(filepath, 'r') as f:
+                for skip, line in enumerate(f):
+                    if '# Masses' in line:
+                        break
+            df = pd.read_csv(filepath, skiprows=skip+1,sep="\t")
+            masses_new = df.Mass.values
+
+            # make the elements fit to the proclaimed elements in masslist
+            names_elements_proclaimed_masslist = mo.Mass_iso_sugglist.names_elements
+            element_numbers_new = np.full([df.shape[0],len(names_elements_proclaimed_masslist)],0)
+            for idxcolumn,element, in enumerate(names_elements_proclaimed_masslist):
+                if element in df.columns:
+                    element_numbers_new[:,idxcolumn] = df[element].values
+
+            if merge_with_old_ml:
+                # create a mask which n, m entry is whether A[n,:] is same as B[m,:]
+                masksame = np.isclose(masses_new[:, None],self.ml.masslist.masses, atol=0.00001)
+                masksame_new_masses =np.any(masksame,axis=1)
+                masses_merged = np.hstack((self.ml.masslist.masses,masses_new[~masksame_new_masses]))
+                element_numbers_merged = np.vstack((self.ml.masslist.element_numbers,element_numbers_new[~masksame_new_masses,:]))
+                sorted_on_masses = np.argsort(masses_merged)
+                masses_merged = masses_merged[sorted_on_masses]
+                element_numbers_merged = element_numbers_merged[sorted_on_masses,:]
+                masses_new = masses_merged
+                element_numbers_new = element_numbers_merged
+
+            new_masslist = mo._Data(masses_new,element_numbers_new)
+            self.ml = mo.Mass_iso_sugglist(new_masslist)
+            self.ml.redo_qlist(self.masslist_widget)
+
+    def showmasslist_fn(self):
+        print("Show total masslist")
     def save_masslist_to_csv(self, saveas = False):
         if self.savefilename == None or saveas:
             defaultsavefilename = os.path.join(self.filename,"masslist.csv")

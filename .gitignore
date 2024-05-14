@@ -3,4 +3,5 @@
 /workflows/config.ini
 /dist/
 /build/
-/plots_for_talk.py
+/interpolation_plots.py
+/local_fit_plots.py

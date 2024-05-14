@@ -18,6 +18,7 @@ class Config():
         sections_and_keys = {
             'filepaths': {
                 'filepath_lastreadin': '',
+                'filepath_last_import_masslist':''
             },
             'ranges': {
                 'lastrangesettings': '',
@@ -118,6 +119,12 @@ class QHSeparationLine(QtWidgets.QFrame):
     self.setFrameShadow(QtWidgets.QFrame.Sunken)
     self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
     return
+
+class Import_Dialog(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+
+
 class HelpWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(HelpWindow, self).__init__(parent)
@@ -200,7 +207,7 @@ class AddnewElement(QtWidgets.QMainWindow):
         self.parent.jump_to_mass(float(mass))
         if not (self.parent.ml.suggestions.element_numbers == compound).all(axis=1).any():
             self.parent.ml.add_suggestion_to_sugglist(self.parent, compound)
-        self.showmass_label.setText(f"{mass}")
+        self.showmass_label.setText(f"{round(mass,4)}")
 
     def addElement(self):
         compoundarray = [0]*len(self.parent.ml.names_elements)
