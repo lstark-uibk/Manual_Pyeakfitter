@@ -467,17 +467,22 @@ class Spectrum():
 
     '''
 
-    def __init__(self, filename, parent):
+    def __init__(self, filename):
         subspectra_limit=50
         with h5py.File(filename, "r") as f:
             self.sum_specs_ds = f["SumSpecs"]
+            self.specs_times = f["AvgStickCpsTimes"]
             if self.sum_specs_ds.shape[0] > subspectra_limit:
                 n = int(round(self.sum_specs_ds.shape[0]/subspectra_limit))
                 print(f"Too many subspectra {self.sum_specs_ds.shape[0]}, take only {subspectra_limit}")
                 nthrow = slice(None, None, n)
                 self.sum_specs = self.sum_specs_ds[nthrow,:]
+                self.specs_times = self.specs_times[nthrow]
             else:
                 self.sum_specs = self.sum_specs_ds[()]
+                self.specs_times = self.specs_times[()]
+            self.specs_times = np.array([np.datetime64(int(ts), 's') for ts in self.specs_times])
+
             self._baselines_ds = f["BaseLines"][()]
             if self._baselines_ds.shape[0] > subspectra_limit:
                 n = int(round(self._baselines_ds.shape[0]/subspectra_limit))

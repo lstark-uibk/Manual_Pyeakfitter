@@ -198,7 +198,7 @@ def redraw_subspec(parent):
     -------
     None
     """
-    numbersubspec = int(parent.slider.value())
+    numbersubspec = int(parent.slider.sl.value())
     if parent.plot_settings["show_plots"][3]:
         parent.graphWidget.removeItem(parent.subspec_plot )
         parent.subspec_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.sum_specs[numbersubspec, :],

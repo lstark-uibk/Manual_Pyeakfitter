@@ -8,6 +8,7 @@ import sys
 import workflows.masslist_objects as mo
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.pyqt_objects as po
+import datetime as dt
 import configparser
 
 class Worker(QRunnable):
@@ -81,7 +82,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.verticalLayout2.addWidget(self.graphWidget)
 
-        self.slider = QtWidgets.QSlider(Qt.Horizontal)
+        # self.slider = QtWidgets.QSlider(Qt.Horizontal)
+        self.slider = po.LabeledSlider(0,1,1)
         self.slider.setFocusPolicy(Qt.StrongFocus)
         self.verticalLayout2.addWidget(self.slider)
 
@@ -111,17 +113,16 @@ class MainWindow(QtWidgets.QMainWindow):
         menubar = QtWidgets.QMenuBar()
         self.actionFile = menubar.addMenu("File")
         # the po.openfile triggers init_UI_file_loaded() and init_plots()
-        openfile = QtWidgets.QAction("Open", self)
+        openfile = QtWidgets.QAction("Open .hdf5 result file", self)
         openfile.setShortcut("Ctrl+O")
         openfile.triggered.connect(lambda: po.open_file(self))
         self.actionFile.addAction(openfile)
 
-        self.importmasslist = QtWidgets.QAction("Import Masslist for .csv", self)
+        self.importmasslist = QtWidgets.QAction("Import Masslist from .csv", self)
         self.importmasslist.setShortcut("Ctrl+I")
         self.actionFile.addAction(self.importmasslist)
 
-        self.showmasslist = QtWidgets.QAction("Show total masslist with isotopes", self)
-        self.actionFile.addAction(self.showmasslist)
+
 
         self.savecsv = QtWidgets.QAction("Save Masslist to .csv", self)
         self.savecsv.setShortcut("Ctrl+S")
@@ -129,6 +130,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveascsv = QtWidgets.QAction("Save Masslist as new .csv file", self)
         self.saveascsv.setShortcut("Ctrl+Alt+S")
         self.actionFile.addAction(self.saveascsv)
+
+        self.saveashdf5 = QtWidgets.QAction("Save Masslist in new .hdf5 file", self)
 
         self.actionFile.addSeparator()
         quit = QtWidgets.QAction("Quit", self)
@@ -162,7 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
-        self.sp = mo.Spectrum(self.filename,self)
+        self.sp = mo.Spectrum(self.filename)
         self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         self.plot_settings = {"font" : QtGui.QFont('Calibri', 11),
                               "vert_lines_color_suggestions": (97, 99, 102,70),
@@ -192,12 +195,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_UI_file_loaded(self):
         #add functionality to:
         #slider
-        self.slider.setMinimum(0)
-        self.slider.setMaximum(self.sp.sum_specs.shape[0]-1)
-        self.slider.setTickPosition(QtWidgets.QSlider.TicksBothSides)
-        self.slider.setTickInterval(1)
-        self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
-        self.slider.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
+        #first remove old slider and make anew with new labels etc
+        self.slider.deleteLater()
+        minslider = 0
+        maxslider = self.sp.sum_specs.shape[0]-1
+        labels =[ts.astype(dt.datetime).strftime("%Y-%m-%d %H:%M") for ts in self.sp.specs_times]
+        self.slider = po.LabeledSlider(minslider, maxslider, 1, orientation=Qt.Horizontal,labels=labels)
+        self.verticalLayout2.addWidget(self.slider)
+        # self.slider.setTickPosition(QtWidgets.QSlider.TicksBothSides)
+        # self.slider.setTickInterval(1)
+        # self.label.setText(labels[value])
+        # self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
+        self.slider.sl.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
         # print suggestion list button
         # self.button.clicked.connect(self.printsugg)
         # save masslist button
@@ -225,7 +234,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.saveascsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = True))
         self.savecsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = False))
         self.importmasslist.triggered.connect(self.importmasslist_fn)
-        self.showmasslist.triggered.connect(self.showmasslist_fn)
 
 
     def printsugg(self):
@@ -321,35 +329,45 @@ class MainWindow(QtWidgets.QMainWindow):
                 merge_with_old_ml = True
 
             # load the data
-            with open(filepath, 'r') as f:
-                for skip, line in enumerate(f):
-                    if '# Masses' in line:
-                        break
-            df = pd.read_csv(filepath, skiprows=skip+1,sep="\t")
-            masses_new = df.Mass.values
+            try:
+                with open(filepath, 'r') as f:
+                    for skip, line in enumerate(f):
+                        if '# Masses' in line:
+                            break
+                df = pd.read_csv(filepath, skiprows=skip+1,sep="\t")
+                masslist_read_in = True
+            except Exception as error:
+                dlg = QtWidgets.QMessageBox(self)
+                dlg.setWindowTitle("Error")
+                dlg.setText("Masslist is not readable, check whether .csv has the right format")
+                dlg.exec()
+                print(f"The Exception was {error}")
+                masslist_read_in = False
+            if masslist_read_in:
+                masses_new = df.Mass.values
 
-            # make the elements fit to the proclaimed elements in masslist
-            names_elements_proclaimed_masslist = mo.Mass_iso_sugglist.names_elements
-            element_numbers_new = np.full([df.shape[0],len(names_elements_proclaimed_masslist)],0)
-            for idxcolumn,element, in enumerate(names_elements_proclaimed_masslist):
-                if element in df.columns:
-                    element_numbers_new[:,idxcolumn] = df[element].values
+                # make the elements fit to the proclaimed elements in masslist
+                names_elements_proclaimed_masslist = mo.Mass_iso_sugglist.names_elements
+                element_numbers_new = np.full([df.shape[0],len(names_elements_proclaimed_masslist)],0)
+                for idxcolumn,element, in enumerate(names_elements_proclaimed_masslist):
+                    if element in df.columns:
+                        element_numbers_new[:,idxcolumn] = df[element].values
 
-            if merge_with_old_ml:
-                # create a mask which n, m entry is whether A[n,:] is same as B[m,:]
-                masksame = np.isclose(masses_new[:, None],self.ml.masslist.masses, atol=0.00001)
-                masksame_new_masses =np.any(masksame,axis=1)
-                masses_merged = np.hstack((self.ml.masslist.masses,masses_new[~masksame_new_masses]))
-                element_numbers_merged = np.vstack((self.ml.masslist.element_numbers,element_numbers_new[~masksame_new_masses,:]))
-                sorted_on_masses = np.argsort(masses_merged)
-                masses_merged = masses_merged[sorted_on_masses]
-                element_numbers_merged = element_numbers_merged[sorted_on_masses,:]
-                masses_new = masses_merged
-                element_numbers_new = element_numbers_merged
+                if merge_with_old_ml:
+                    # create a mask which n, m entry is whether A[n,:] is same as B[m,:]
+                    masksame = np.isclose(masses_new[:, None],self.ml.masslist.masses, atol=0.00001)
+                    masksame_new_masses =np.any(masksame,axis=1)
+                    masses_merged = np.hstack((self.ml.masslist.masses,masses_new[~masksame_new_masses]))
+                    element_numbers_merged = np.vstack((self.ml.masslist.element_numbers,element_numbers_new[~masksame_new_masses,:]))
+                    sorted_on_masses = np.argsort(masses_merged)
+                    masses_merged = masses_merged[sorted_on_masses]
+                    element_numbers_merged = element_numbers_merged[sorted_on_masses,:]
+                    masses_new = masses_merged
+                    element_numbers_new = element_numbers_merged
 
-            new_masslist = mo._Data(masses_new,element_numbers_new)
-            self.ml = mo.Mass_iso_sugglist(new_masslist)
-            self.ml.redo_qlist(self.masslist_widget)
+                new_masslist = mo._Data(masses_new,element_numbers_new)
+                self.ml = mo.Mass_iso_sugglist(new_masslist)
+                self.ml.redo_qlist(self.masslist_widget)
 
     def showmasslist_fn(self):
         print("Show total masslist")
@@ -360,30 +378,31 @@ class MainWindow(QtWidgets.QMainWindow):
             self.savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
                                                                 "Save File", defaultsavefilename, "csv_files(*.csv)",
                                                                 options=options)
-        head = "# Elements: "
-        head += "\n"
-        for element in self.ml.names_elements:
-            head += f"{element}\t"
-        head += "\n\n"
-        for mass in self.ml.masses_elements:
-            head += f"{mass}\t"
-        head += "\n\n"
-        head += "#Masses: \n"
-        for element in self.ml.names_elements:
-            head += f"{element}\t"
-        head += "Mass\t"
-        head += "Name\n"
-        with open(self.savefilename, "w") as file:
-            file.write(head)
-        element_names = np.empty(self.ml.masslist.masses.size,dtype=object)
-        for index, row in enumerate(self.ml.masslist.element_numbers):
-            element_names[index] = mo.get_names_out_of_element_numbers(row)
-        # problem strings und numbers -> pandas
-        data = pd.DataFrame(np.c_[self.ml.masslist.element_numbers, self.ml.masslist.masses])
-        data.insert(len(data.columns),"names",element_names)
-        data.to_csv(self.savefilename, mode='a', sep='\t', index=False, header=False)
+        if self.savefilename:
+            head = "# Elements: "
+            head += "\n"
+            for element in self.ml.names_elements:
+                head += f"{element}\t"
+            head += "\n\n"
+            for mass in self.ml.masses_elements:
+                head += f"{mass}\t"
+            head += "\n\n"
+            head += "#Masses: \n"
+            for element in self.ml.names_elements:
+                head += f"{element}\t"
+            head += "Mass\t"
+            head += "Name\n"
+            with open(self.savefilename, "w") as file:
+                file.write(head)
+            element_names = np.empty(self.ml.masslist.masses.size,dtype=object)
+            for index, row in enumerate(self.ml.masslist.element_numbers):
+                element_names[index] = mo.get_names_out_of_element_numbers(row)
+            # problem strings und numbers -> pandas
+            data = pd.DataFrame(np.c_[self.ml.masslist.element_numbers, self.ml.masslist.masses])
+            data.insert(len(data.columns),"names",element_names)
+            data.to_csv(self.savefilename, mode='a', sep='\t', index=False, header=False)
 
-        print("Saved Masslist to", self.savefilename)
+            print("Saved Masslist to", self.savefilename)
 
     def jump_to_mass(self, event):
         if type(event) is str:
