@@ -90,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # other widgets for the verticalLayout1
         # self.button = QtWidgets.QPushButton("Print suggestions in view range")
         self.button = QtWidgets.QPushButton("Manually add Element")
-
+        self.show_total_masslist_button = QtWidgets.QPushButton("Show total Masslist")
         self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
 
 
@@ -160,6 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.verticalLayout1.addWidget(self.masslist_widget)
         self.verticalLayout1.addWidget(self.button)
         self.verticalLayout1.addWidget(self.save_button)
+        self.verticalLayout1.addWidget(self.show_total_masslist_button)
 
         self.setCentralWidget(self.centralwidget)
 
@@ -223,10 +224,15 @@ class MainWindow(QtWidgets.QMainWindow):
         changemassrangesWindow = po.SelectMassRangeWindow(self)
         self.changemassranges.triggered.connect(changemassrangesWindow.show)
         # add new element action in menubar
-        addElementWindow = po.AddnewElement(self)
-        # print add elements
-        self.button.clicked.connect(addElementWindow.show)
-        self.addElement.triggered.connect(addElementWindow.show)
+        def show_addnewelem_window():
+            addElementWindow = po.AddnewElement(self)
+            addElementWindow.show()
+        self.button.clicked.connect(show_addnewelem_window)
+        def show_totalml_window():
+            addElementWindow = po.Show_total_Masslist(self)
+            addElementWindow.show()
+        self.show_total_masslist_button.clicked.connect(show_totalml_window)
+        self.addElement.triggered.connect(show_addnewelem_window)
 
         self.plotsettings_window = po.PlotSettingsWindow(self)
         self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
@@ -332,7 +338,7 @@ class MainWindow(QtWidgets.QMainWindow):
             try:
                 with open(filepath, 'r') as f:
                     for skip, line in enumerate(f):
-                        if '# Masses' in line:
+                        if 'Masses' in line:
                             break
                 df = pd.read_csv(filepath, skiprows=skip+1,sep="\t")
                 masslist_read_in = True

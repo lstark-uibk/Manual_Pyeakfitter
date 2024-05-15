@@ -3,6 +3,9 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtCore as QtCore
 import numpy as np
 import re
+
+import pandas as pd
+
 import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.masslist_objects as mo
 from PyQt5.QtCore import Qt
@@ -223,8 +226,66 @@ class AddnewElement(QtWidgets.QMainWindow):
 
     def closeWindow(self):
         self.close()
+class TableModel(QtCore.QAbstractTableModel):
+
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            value = self._data.iloc[index.row(), index.column()]
+            return str(value)
+
+    def rowCount(self, index):
+        return self._data.shape[0]
+
+    def columnCount(self, index):
+        return self._data.shape[1]
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return str(self._data.columns[section])
+
+            if orientation == Qt.Vertical:
+                return str(self._data.index[section])
+class Show_total_Masslist(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(Show_total_Masslist, self).__init__(parent)
+        mass_iso_sugg_list = parent.ml
+        self.setGeometry(10,10, 1000, 1000)
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
+
+        names_isotopes = [mo.get_names_out_of_element_numbers(el_numbers_one_parent_mass) for
+                                    el_numbers_one_parent_mass in mass_iso_sugg_list.isotopes.element_numbers]
+        names_masses_isotopes = [[str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(row_masses, row_names)] for
+                                 row_masses, row_names in zip(mass_iso_sugg_list.isotopes.masses, names_isotopes)]
+        names_masses_parent = [str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(mass_iso_sugg_list.masslist.masses,mo.get_names_out_of_element_numbers(mass_iso_sugg_list.masslist.element_numbers))]
+        dataparent = pd.DataFrame(names_masses_parent,columns = ['parent mass'])
+        dataiso = pd.DataFrame(names_masses_isotopes,columns=mass_iso_sugg_list.isotopes_to_include)
+        data = pd.concat([dataparent, dataiso], axis=1)
+        self.table = QtWidgets.QTableView()
+        self.model = TableModel(data)
+        self.table.setModel(self.model)
+        self.centralLayout.addWidget(self.table)
 
 
+
+        self.parent = parent
+        self.setWindowTitle("Total Masslist")
+
+
+        closebutton = QtWidgets.QPushButton("Close")
+        closebutton.clicked.connect(self.closeWindow)
+        self.centralLayout.addWidget(closebutton)
+
+        self.setCentralWidget(self.centralWidget)
+
+    def closeWindow(self):
+        self.close()
 
 class RegExpValidator(QtGui.QValidator):
     def __init__(self, parent=None):

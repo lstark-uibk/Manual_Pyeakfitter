@@ -83,6 +83,12 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
         n, k = (int(element_composition[5]), 1)
         IsotopicAbundance[2] = math.comb(n, k) * 0.00205      #abundance out of https://en.wikipedia.org/wiki/Isotopes_of_oxygen
         Isotope_Elemental_compositions[2, :] = element_composition - [1 if i == 5 else 0 for i in range(0,nr_elements)] + [1 if i == 6 else 0 for i in range(0,nr_elements)]
+    # if it contains sulfur
+    if element_composition[7] > 0:
+        IsotopeMass[3] = mass -	31.9720711 + 33.96786
+        # n, k = (element_composition[7], 1)# because it is only one S we donot need it
+        IsotopicAbundance[0] = element_composition[7] * 0.0425          #out of https://en.wikipedia.org/wiki/Isotopes_of_sulfur
+        Isotope_Elemental_compositions[0,:] = element_composition - [1 if i == 7 else 0 for i in range(0,nr_elements)] + [1 if i == 8 else 0 for i in range(0,nr_elements)]
 
     return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
 
@@ -100,7 +106,6 @@ def _load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
 #
 def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersanemasses = True):
     Masses_elements = masses_elements
-
     Listofranges = [Mass_suggestions_range_numbers[key] for key in Mass_suggestions_range_numbers]
     Element_numbers = np.array(list(itertools.product(*Listofranges)))
     Masses = np.sum(
@@ -112,9 +117,10 @@ def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersan
     H_to_C_upper = 3.3
     O_to_C_upper = 2
     if filtersanemasses:
+        #0 = C, 2 = H, 4 = N, 5 = 0, 7 = S
         selMasses_mask = np.full(Masses.shape, True)
         selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] > H_to_C_lower * Element_numbers[:, 0]) | (Masses <40)) # H:C > 1.3 for masses over 40
-        including_NH4 = (Element_numbers[:, 5] >= 1) & (Element_numbers[:, 2] >= 3)
+        including_NH4 = (Element_numbers[:, 4] >= 1) & (Element_numbers[:, 2] >= 3)
         including_NH4_H_number_sub_4 = including_NH4 & (Element_numbers[:, 2] - 3 < H_to_C_upper * Element_numbers[:, 0])
         selMasses_mask = selMasses_mask & (Element_numbers[:, 3] == 1) # only include compounds which have a H+ in it
         selMasses_mask = selMasses_mask & ((Element_numbers[:, 2] < H_to_C_upper * Element_numbers[:, 0]) | (Masses <40) | including_NH4_H_number_sub_4) # H:C <  3.3 for masses over 40 or H-3:C <  3.3 for compound including NH3H+
@@ -224,8 +230,9 @@ class Mass_iso_sugglist():
 
     '''
 
-    names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S", "I", "Si"] #iodine, silizium
-    order_of_letters = [0, 1, 2, 8, 4, 5, 6, 7, 9, 3]
+    names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S","S(34)", "I", "Si"] #iodine, silizium
+    isotopes_to_include = ["C(13)","2C(13)","O(18)","S(34)"]
+    order_of_letters = [0, 1, 2, 9, 4, 5, 6, 7 ,8 , 10 ,3]
     masses_elements = np.array([12,
                                 13.00335,
                                 1.00783,
@@ -234,10 +241,11 @@ class Mass_iso_sugglist():
                                 15.99492,
                                 17.99916,
                                 31.97207,
+                                33.967867, # https://en.wikipedia.org/wiki/Isotopes_of_sulfur
                                 126.90448,
                                 27.9763
                                ])
-    mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 1), (0, 1), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
+    mass_suggestions_ranges = [(0, 10), (0, 0), (0, 20), (1, 1), (0, 1), (0, 5), (0, 0), (0, 1),(0, 0), (0, 1), (0, 0)]  # always in the order C C13 H H+ N O, O18 S in the first place would be C number of 0 to 10
     co = po.Config()
     old_mass_suggestions_numbers = co.read_from_config("ranges", "lastrangesettings")
     try:
@@ -249,10 +257,19 @@ class Mass_iso_sugglist():
             mass_suggestions_numbers[key] = list(range(mass_suggestions_ranges[i][0],mass_suggestions_ranges[i][1]+1))
         # order ["C", "C13", "H", "H+", "N", "O", "O18", "S", ]
     isotopes_range_back = 2 # isotopes range 2 Masses further (important for mass coefficients)
-    nr_isotopes = 3  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
+    nr_isotopes = len(isotopes_to_include)  #right now we consider 3 isotopes: Isotope with 1 or 2 C13 and Isotope with 1 O18
     nr_elements = len(names_elements)
     def __init__(self, masslist):
-        args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
+        #try it with old suggestion numbers, if this doesnot work go to default
+        try:
+            args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
+        except Exception as error:
+            mass_suggestions_numbers = {}
+            for i, key in enumerate(self.names_elements):
+                self.mass_suggestions_numbers[key] = list(
+                    range(self.mass_suggestions_ranges[i][0], self.mass_suggestions_ranges[i][1] + 1))
+            args, kwargs = _load_suggestions(self.mass_suggestions_numbers, masses_elements = self.masses_elements)
+            print(f"Old suggestion numbers yielded an error {error}")
         self.suggestions = _Data(*args, **kwargs)
         self.masslist = masslist
         args, kwargs = _load_isotopes(self.masslist, self.nr_isotopes,self.nr_elements)
@@ -752,4 +769,4 @@ def get_element_numbers_out_of_names(namestring):
     return mass, compound_array
 
 
-# ml = Mass_iso_sugglist("C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5")
+ml = read_masslist_from_hdf5_produce_iso_sugg(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
