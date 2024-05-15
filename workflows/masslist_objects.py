@@ -746,6 +746,7 @@ def get_element_numbers_out_of_names(namestring):
 
 
     '''
+    namestring = namestring.lower()
     ion = False
     if "+" in namestring:
         ion = True
@@ -774,11 +775,11 @@ def get_element_numbers_out_of_names(namestring):
             else: #takes care of double writing eg C7H8NH4+
                 numbers[el_num == elements] += 1
 
-
     if ion:
         elements = np.append(elements,"H+")
         numbers = np.append(numbers,1)
         number_H_mask = np.array([x.lower() for x in elements], dtype='str') == "h"
+
         if numbers[number_H_mask] > 0: # if the H number is more than 0
             numbers[number_H_mask] -= 1
 
@@ -790,10 +791,10 @@ def get_element_numbers_out_of_names(namestring):
         #make it lower, so that we have more freedom in writing
         element_lower = element.lower()
         if np.any(element_lower == elementsinstring_lower):
-            compound_array[index] = numbers[element_lower == elementsinstring_lower]
+            compound_array[index] = numbers[element_lower == elementsinstring_lower][0]
 
     mass = np.sum(compound_array*Mass_iso_sugglist.masses_elements)
     return mass, compound_array
 
 
-ml = read_masslist_from_hdf5_produce_iso_sugg(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
+# ml = read_masslist_from_hdf5_produce_iso_sugg(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")

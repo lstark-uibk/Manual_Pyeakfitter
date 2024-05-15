@@ -412,19 +412,21 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Saved Masslist to", self.savefilename)
 
     def jump_to_mass(self, event):
-        if type(event) is str:
-            mass = float(event)
-        elif type(event) is float:
-            mass = event
-        else:
-            mass, compoundstr = event.text().rsplit('  ', 1)
-            mass = float(mass)
-        print("jump to mass: ", mass)
-        xlims, ylims = self.vb.viewRange()
-        xrange = xlims[1] - xlims[0]
-        target_mass = mass
-        newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
-        self.vb.setXRange(*newxlims, padding = 0)
+        if event:
+            if type(event) is str:
+                mass = float(event)
+
+            elif type(event) is float:
+                mass = event
+            else:
+                mass, compoundstr = event.text().rsplit('  ', 1)
+                mass = float(mass)
+            print("jump to mass: ", mass)
+            xlims, ylims = self.vb.viewRange()
+            xrange = xlims[1] - xlims[0]
+            target_mass = mass
+            newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
+            self.vb.setXRange(*newxlims, padding = 0)
 
     def jump_to_compound(self,compoundstring):
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
