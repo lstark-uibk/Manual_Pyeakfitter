@@ -383,9 +383,11 @@ class Mass_iso_sugglist():
 
             else: # if it is not in the suggestions we cannot show isotopes
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, [[0]*len(self.names_elements)], axis=0)
+                self.masslist.compound_names = np.append(self.masslist.compound_names, '')
                 self.isotopes.masses = np.vstack([self.isotopes.masses, [np.nan]*self.nr_isotopes])
                 self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, [np.nan]*self.nr_isotopes])
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, [[[np.nan]*self.nr_elements]*self.nr_isotopes]])
+                self.isotopes.compound_names = np.vstack([self.isotopes.compound_names, ['']*self.nr_isotopes])
                 print("add mass ", mass, "to masslist")
 
 
