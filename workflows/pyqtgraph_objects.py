@@ -29,14 +29,14 @@ def _redraw_vline(parent, xlims, type = "mass"):
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
-            compound_name = mf.get_names_out_of_element_numbers(element_numbers[0])
-            label = compound_name
+            compound_name = massisosugg.compound_names[massisosugg.masses == mass]
+            label = compound_name[0]
             print(mass, element_numbers, compound_name)
             #print in layer suggstions<isotopes<masslist
             if np.any(element_numbers):
                 sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= label)
             else:
-                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type = "mass_without_comp", Label= compound_name)
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type = "mass_without_comp", Label= "")
             sugisomass_line.setZValue(z)
             parent.graphWidget.addItem(sugisomass_line)
             massisosugg.current_lines.append(sugisomass_line)
@@ -293,6 +293,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                         # Set the current item and scroll to it
                         self.parent.masslist_widget.setCurrentItem(item)
                         break  # Exit the loop if found
+
         else:
             self.setMouseHover(False)
             if self.delatable:

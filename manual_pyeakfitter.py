@@ -10,6 +10,7 @@ import workflows.pyqtgraph_objects as pyqtgraph_objects
 import workflows.pyqt_objects as po
 import datetime as dt
 import configparser
+import re
 
 class Worker(QRunnable):
     '''
@@ -448,9 +449,17 @@ class MainWindow(QtWidgets.QMainWindow):
             xlims, ylims = self.vb.viewRange()
             self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
         if event.key() == Qt.Key_Delete:
-            self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
-            xlims, ylims = self.vb.viewRange()
-            pyqtgraph_objects.redraw_localfit(self, xlims)
+            if self.ml.currently_hovered:
+                #if we hover something delete this
+                self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
+                xlims, ylims = self.vb.viewRange()
+                pyqtgraph_objects.redraw_localfit(self, xlims)
+            print(self.masslist_widget.currentItem())
+            if self.masslist_widget.currentItem():
+                # otherwise look in qlist whether there is a item currently selected
+                text = self.masslist_widget.currentItem().text()
+                mass = re.search(r'(\d+\.\d+)',text ).group(1)
+                self.ml.delete_mass_from_masslist(self,float(mass))
 
 
 def main():

@@ -20,8 +20,8 @@ def _load_masslist(Filename, nr_elements_masslistproposed):
         if difference_nr_element_masslistloaded_masslistproposed != 0:
             for i in range(0, difference_nr_element_masslistloaded_masslistproposed):
                 Element_numbers = np.c_[Element_numbers, np.zeros(Element_numbers.shape[0])]
-
-        return Masses,Element_numbers
+        Compound_names = np.array(get_names_out_of_element_numbers(Element_numbers))
+        return Masses,Element_numbers, Compound_names
 
 def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed):
     '''Create the Masses, Elemental compositions and Isotopic abundances of isotopes (with 1,2 C13 and O18 right now) dor a given input compound
@@ -87,20 +87,23 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
     if element_composition[7] > 0:
         IsotopeMass[3] = mass -	31.9720711 + 33.96786
         # n, k = (element_composition[7], 1)# because it is only one S we donot need it
-        IsotopicAbundance[0] = element_composition[7] * 0.0425          #out of https://en.wikipedia.org/wiki/Isotopes_of_sulfur
-        Isotope_Elemental_compositions[0,:] = element_composition - [1 if i == 7 else 0 for i in range(0,nr_elements)] + [1 if i == 8 else 0 for i in range(0,nr_elements)]
+        IsotopicAbundance[3] = element_composition[7] * 0.0425          #out of https://en.wikipedia.org/wiki/Isotopes_of_sulfur
+        Isotope_Elemental_compositions[3,:] = element_composition - [1 if i == 7 else 0 for i in range(0,nr_elements)] + [1 if i == 8 else 0 for i in range(0,nr_elements)]
 
-    return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions
+    Isotope_compound_names = np.array([get_names_out_of_element_numbers(isotope) for isotope in Isotope_Elemental_compositions])
+    return IsotopeMass, IsotopicAbundance, Isotope_Elemental_compositions, Isotope_compound_names
 
 def _load_isotopes(masslist, Nr_isotopes,nr_elements_masslistproposed):
     # here it is important, that the index in the isotopes is always the same as the index in the masslist
     Isotope_Elemental_compositions = np.full((masslist.masses.shape[0], Nr_isotopes, masslist.element_numbers.shape[1]), np.nan)
     IsotopeMasses = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
     IsotopicAbundance = np.full((masslist.masses.shape[0], Nr_isotopes), np.nan)
+    Compound_names =  np.full((masslist.masses.shape[0], Nr_isotopes), '',dtype='U20')
 
     for i, (mass, element_composition) in enumerate(zip(masslist.masses, masslist.element_numbers)):
-        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:] = make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed)
-    return [IsotopeMasses, Isotope_Elemental_compositions], {"IsotopicAbundance" : IsotopicAbundance}
+        IsotopeMasses[i,:],IsotopicAbundance[i,:],Isotope_Elemental_compositions[i,:,:], Compound_names[i, :]= make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistproposed)
+
+    return [IsotopeMasses, Isotope_Elemental_compositions,Compound_names], {"IsotopicAbundance" : IsotopicAbundance}
 
 
 #
@@ -129,9 +132,10 @@ def _load_suggestions(Mass_suggestions_range_numbers, masses_elements, filtersan
         Element_numbers = Element_numbers[selMasses_mask,:]
         # Masses_thrown = Masses[~selMasses_mask]
         # Element_numbers_thrown = Element_numbers[~selMasses_mask,:]
+        Compound_names = np.array(get_names_out_of_element_numbers(Element_numbers))
 
 
-    return [Masses,Element_numbers],{"Mass_suggestions_ranges" : Mass_suggestions_range_numbers}
+    return [Masses,Element_numbers,Compound_names],{"Mass_suggestions_ranges" : Mass_suggestions_range_numbers}
 
 
 class _Data():
@@ -166,10 +170,11 @@ class _Data():
     '''
 
 
-    def __init__(self,Masses,Element_numbers,Mass_suggestions_ranges = [], IsotopicAbundance = []):
+    def __init__(self,Masses,Element_numbers,Compound_names,Mass_suggestions_ranges = [], IsotopicAbundance = []):
         # initialize masslist
         self.element_numbers = Element_numbers
         self.masses = Masses
+        self.compound_names = Compound_names
         # self.current_element_names = []
         self.current_lines = []
         self.mass_coefficients = np.full(Masses.shape[0],1.)
@@ -322,14 +327,17 @@ class Mass_iso_sugglist():
                 # add to suggestion list
                 self.suggestions.element_numbers = np.vstack([self.suggestions.element_numbers,compoundelements])
                 self.suggestions.masses = np.append(self.suggestions.masses,mass)
-                print("add mass ", mass, ",", get_names_out_of_element_numbers(compoundelements) , "to suggestionslist")
+                this_compound_name = get_names_out_of_element_numbers(compoundelements)
+                self.suggestions.compound_names = np.append(self.suggestions.compound_names,this_compound_name)
+                print("add mass ", mass, ",", get_names_out_of_element_numbers(compoundelements) ,this_compound_name, "to suggestionslist")
 
                 sortperm = np.argsort(self.suggestions.masses)
                 self.suggestions.masses = self.suggestions.masses[sortperm]
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
+                self.suggestions.compound_names = self.suggestions.compound_names[sortperm]
 
                 pyqtgraph_objects.redraw_vlines(parent, xlims)
-                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, Pos=mass, Type = "highlight", Label = get_names_out_of_element_numbers(compoundelements))
+                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, Pos=mass, Type = "highlight", Label = this_compound_name)
 
                 # parent.ml.suggestions.current_lines.append(highlight_line)
                 parent.graphWidget.addItem(highlight_line)
@@ -361,10 +369,14 @@ class Mass_iso_sugglist():
             if mass in self.suggestions.masses:
                 element_numbers_this = self.suggestions.element_numbers[np.where(self.suggestions.masses == mass)]
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, element_numbers_this, axis=0)
-                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes, self.nr_elements)
+                self.masslist.compound_names = np.append(self.masslist.compound_names,get_names_out_of_element_numbers(element_numbers_this))
+                isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this, isotope_compound_names = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes, self.nr_elements)
+                print(isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this, isotope_compound_names)
+                print(self.isotopes.compound_names)
                 self.isotopes.masses = np.vstack([self.isotopes.masses, isotope_mass_this])
                 self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, isotopic_abundance_this])
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, np.expand_dims(isotope_element_numbers_this, axis= 0)])
+                self.isotopes.compound_names = np.vstack([self.isotopes.compound_names, isotope_compound_names])
 
                 print("add mass ", mass, ",", get_names_out_of_element_numbers(element_numbers_this.flatten()) ,
                       "with isotpes ", isotope_mass_this, [get_names_out_of_element_numbers(x) for x in isotope_element_numbers_this], "to masslist")
@@ -380,14 +392,19 @@ class Mass_iso_sugglist():
             sortperm = np.argsort(self.masslist.masses)
             self.masslist.masses = self.masslist.masses[sortperm]
             self.masslist.element_numbers = self.masslist.element_numbers[sortperm]
+            self.masslist.compound_names = self.masslist.compound_names[sortperm]
+
             self.isotopes.masses = self.isotopes.masses[sortperm]
             self.isotopes.isotopic_abundance = self.isotopes.isotopic_abundance[sortperm]
             self.isotopes.element_numbers = self.isotopes.element_numbers[sortperm]
+            self.isotopes.compound_names = self.isotopes.compound_names[sortperm]
+
 
             #delete in suggetions -> Problem danach ist es ganz weg
             index_of_deletion = np.where(self.suggestions.masses == mass)
             self.suggestions.masses = np.delete(self.suggestions.masses, index_of_deletion)
             self.suggestions.element_numbers = np.delete(self.suggestions.element_numbers, index_of_deletion, axis = 0)
+            self.suggestions.compound_names = np.delete(self.suggestions.compound_names, index_of_deletion)
             xlims, ylims = parent.vb.viewRange()
             pyqtgraph_objects.redraw_vlines(parent,xlims)
             self.redo_qlist(parent.masslist_widget)
@@ -406,7 +423,8 @@ class Mass_iso_sugglist():
         -------
         None
         '''
-        if mass in self.masslist.masses:
+        print(f"Try to delete Mass {mass} in masslist")
+        if np.any(np.isclose(self.masslist.masses, mass, atol=0.000001)):
             #delete in masses
             index_of_deletion = np.where(self.masslist.masses == mass)
 
@@ -415,19 +433,26 @@ class Mass_iso_sugglist():
                 if mass not in self.suggestions.masses:
                     self.suggestions.masses = np.append(self.suggestions.masses, mass)
                     self.suggestions.element_numbers = np.append(self.suggestions.element_numbers, self.masslist.element_numbers[index_of_deletion], axis=0)
+                    self.suggestions.compound_names = np.append(self.suggestions.compound_names, self.masslist.compound_names[index_of_deletion])
                     sortperm = np.argsort(self.suggestions.masses)
                     self.suggestions.masses = self.suggestions.masses[sortperm]
                     self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
+                    self.suggestions.compound_names = self.suggestions.compound_names[sortperm]
 
             print("delete mass ", mass, ",", get_names_out_of_element_numbers(self.masslist.element_numbers[index_of_deletion].flatten()) ,"from masslist")
             self.masslist.masses = np.delete(self.masslist.masses, index_of_deletion)
             self.masslist.element_numbers = np.delete(self.masslist.element_numbers, index_of_deletion, axis = 0)
+            self.masslist.compound_names = np.delete(self.masslist.compound_names, index_of_deletion)
             self.isotopes.masses = np.delete(self.isotopes.masses,index_of_deletion,axis = 0)
             self.isotopes.isotopic_abundance = np.delete(self.isotopes.isotopic_abundance,index_of_deletion,axis = 0)
             self.isotopes.element_numbers = np.delete(self.isotopes.element_numbers,index_of_deletion,axis = 0)
+            self.isotopes.compound_names = np.delete(self.isotopes.compound_names, index_of_deletion,axis = 0)
+            print("Redraw")
             xlims, ylims = parent.vb.viewRange()
             pyqtgraph_objects.redraw_vlines(parent,xlims)
             self.redo_qlist(parent.masslist_widget)
+        else:
+            print("not found in masslist")
 
     def redo_qlist(self,qlist):
         '''Update the List on the right side of the Plot
@@ -441,8 +466,8 @@ class Mass_iso_sugglist():
         None
         '''
         qlist.clear()
-        for mass,element_numbers in zip(self.masslist.masses, self.masslist.element_numbers):
-            qlist.addItem(str(round(mass,6)) + "  " + get_names_out_of_element_numbers(element_numbers))
+        for mass,compound_name in zip(self.masslist.masses, self.masslist.compound_names):
+            qlist.addItem(str(round(mass,6)) + "  " + compound_name)
 
 class Spectrum():
     '''
