@@ -176,23 +176,22 @@ class AddnewElement(QtWidgets.QMainWindow):
         super(AddnewElement, self).__init__(parent)
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
-        self.add_compound_layout = QtWidgets.QHBoxLayout()
-        self.centralLayout.addLayout(self.add_compound_layout)
         self.show_mass_layout = QtWidgets.QHBoxLayout()
-        self.centralLayout.addLayout(self.show_mass_layout)
 
 
 
         self.parent = parent
         self.setWindowTitle("Add new Element")
         #make form layout
-        self.label_add_compound = QtWidgets.QLabel("Add compound: ")
+        elements_implemented = ", ".join(self.parent.ml.names_elements)
+        self.label_add_compound = QtWidgets.QLabel(f"Add compound (elements implemented: {elements_implemented}): ")
         self.add_compound_input = QtWidgets.QLineEdit()
         self.add_compound_input.returnPressed.connect(lambda: self.add_compound(self.add_compound_input.text()))
 
-        self.add_compound_layout.addWidget(self.label_add_compound)
-        self.add_compound_layout.addWidget(self.add_compound_input)
+        self.centralLayout.addWidget(self.label_add_compound)
+        self.centralLayout.addWidget(self.add_compound_input)
 
+        self.centralLayout.addLayout(self.show_mass_layout)
         self.showcompound_label = QtWidgets.QLabel("Mass:")
         self.showmass_label = QtWidgets.QLabel()
         self.show_mass_layout.addWidget(self.showcompound_label)

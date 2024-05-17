@@ -5,6 +5,8 @@ from pyqtgraph.Qt import QtCore
 import workflows.masslist_objects as mf
 import PyQt5.QtGui as QtGui
 import numpy as np
+import datetime as dt
+
 
 def _redraw_vline(parent, xlims, type = "mass"):
     if type == "mass":
@@ -145,8 +147,9 @@ def replot_spectra(parent, plotsetting_show):
     if parent.subspec_plot:
         parent.graphWidget.removeItem(parent.subspec_plot)
     if plotsetting_show[3]:
+        current_subspectrum_time_str = parent.sp.current_subspectrum_time.astype(dt.datetime).strftime("%Y-%m-%d %H:%M")
         parent.subspec_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.sum_specs[0, :],
-                                                  pen={'color': parent.plot_settings["sub_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="subspectrum")
+                                                  pen={'color': parent.plot_settings["sub_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name=f"subspectrum at {current_subspectrum_time_str}")
         parent.subspec_plot.setLogMode(None, True)
 
 def _remove_plot_items(parent,item_list):
@@ -199,10 +202,12 @@ def redraw_subspec(parent):
     None
     """
     numbersubspec = int(parent.slider.sl.value())
+    parent.sp.current_subspectrum_time = parent.sp.specs_times[numbersubspec]
     if parent.plot_settings["show_plots"][3]:
         parent.graphWidget.removeItem(parent.subspec_plot )
+        current_subspectrum_time_str = parent.sp.current_subspectrum_time.astype(dt.datetime).strftime("%Y-%m-%d %H:%M")
         parent.subspec_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.sum_specs[numbersubspec, :],
-                                                  pen=parent.plot_settings["sub_spectrum_color"], name="subspectrum")
+                                                  pen=parent.plot_settings["sub_spectrum_color"], name=f"subspectrum at {current_subspectrum_time_str}")
         parent.subspec_plot.setLogMode(None, True)
 
 
@@ -305,7 +310,10 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         if ev.button() == QtCore.Qt.MouseButton.LeftButton and self.hover:
             print("try to add mass", self.value())
             if self.value() not in self.parent.ml.masslist.masses:
-                self.parent.ml.add_mass_to_masslist(self.parent, self.value())
+                # look whether there are suggestions nearby
+                threshold_closeness = np.diff(self.xlims) * 0.01  # should be 0.01 percent of the current view near
+                nearest_mass_or_suggestion = self.parent.ml.check_whether_suggmass_nearby(self.value(), self.parent.ml.suggestions, threshold_closeness)
+                self.parent.ml.add_mass_to_masslist(self.parent, nearest_mass_or_suggestion)
                 redraw_localfit(self.parent,self.xlims)
             else:
                 print("is already in ml")
@@ -336,15 +344,15 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             self.setPos(self.cursorOffset + self.mapToParent(ev.pos()))
             self.sigDragged.emit(self)
             if ev.isFinish(): # do this when we finished the dragging
+                print(f"Mouse dragged to {self.value()}")
+
                 self.moving = False
                 self.sigPositionChangeFinished.emit(self)
                 # if the line was already in masslist delet it
                 if self.startPosX in self.parent.ml.masslist.masses:
                     self.parent.ml.delete_mass_from_masslist(self.parent, self.startPosX)
-                #if the new position is close to a suggestion -> add the suggestion to the masslist, otherwise only take the mass (no isotopes posiible)
-                close_to_suggestion = self.parent.ml.suggestions.masses[np.isclose(self.value(),self.parent.ml.suggestions.masses, atol = np.diff(self.xlims)*0.0001)]
-                if close_to_suggestion.shape[0] > 0:
-                    self.parent.ml.add_mass_to_masslist(self.parent, close_to_suggestion)
-                else:
-                    self.parent.ml.add_mass_to_masslist(self.parent, self.value())
+                # look whether there are suggestions nearby
+                threshold_closeness = np.diff(self.xlims) * 0.01  # should be 0.01 percent of the current view near
+                nearest_mass_or_suggestion = self.parent.ml.check_whether_suggmass_nearby(self.value(), self.parent.ml.suggestions, threshold_closeness)
+                self.parent.ml.add_mass_to_masslist(self.parent, nearest_mass_or_suggestion)
                 redraw_localfit(self.parent, self.xlims)

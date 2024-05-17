@@ -371,8 +371,6 @@ class Mass_iso_sugglist():
                 self.masslist.element_numbers = np.append(self.masslist.element_numbers, element_numbers_this, axis=0)
                 self.masslist.compound_names = np.append(self.masslist.compound_names,get_names_out_of_element_numbers(element_numbers_this))
                 isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this, isotope_compound_names = make_isotope(mass, element_numbers_this.flatten(), self.nr_isotopes, self.nr_elements)
-                print(isotope_mass_this, isotopic_abundance_this, isotope_element_numbers_this, isotope_compound_names)
-                print(self.isotopes.compound_names)
                 self.isotopes.masses = np.vstack([self.isotopes.masses, isotope_mass_this])
                 self.isotopes.isotopic_abundance = np.vstack([self.isotopes.isotopic_abundance, isotopic_abundance_this])
                 self.isotopes.element_numbers = np.vstack([self.isotopes.element_numbers, np.expand_dims(isotope_element_numbers_this, axis= 0)])
@@ -470,6 +468,18 @@ class Mass_iso_sugglist():
         qlist.clear()
         for mass,compound_name in zip(self.masslist.masses, self.masslist.compound_names):
             qlist.addItem(str(round(mass,6)) + "  " + compound_name)
+    def check_whether_suggmass_nearby(self,mass,suggestions,threshold_closeness):
+        differences_suggmasses_to_value = np.abs(suggestions.masses - mass)
+        close_suggmasses_differences = differences_suggmasses_to_value[differences_suggmasses_to_value < threshold_closeness]
+        close_suggmasses = suggestions.masses[differences_suggmasses_to_value < threshold_closeness]
+        print(f"Close suggestions:{close_suggmasses}")
+        if close_suggmasses.shape[0] > 0:
+            closest_suggmass = close_suggmasses[np.argmin(close_suggmasses_differences)]
+            print(f"close to suggestion {closest_suggmass}")
+            return closest_suggmass
+        else:
+            print("No suggestion Mass near")
+            return mass
 
 class Spectrum():
     '''
@@ -549,6 +559,7 @@ class Spectrum():
         self.current_local_fit = []
         self.current_local_fit_init = False
         self.current_local_fit_masses = []
+        self.current_subspectrum_time = self.specs_times[0]
     def make_singlepeak(self, mass, massaxis_this_zoom):
         '''Make a single peak around a given mass with given massaxis points and interpolated peakshape to the given mass
 
@@ -798,3 +809,4 @@ def get_element_numbers_out_of_names(namestring):
 
 
 # ml = read_masslist_from_hdf5_produce_iso_sugg(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
+# sp = Spectrum(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
