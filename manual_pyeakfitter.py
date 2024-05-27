@@ -371,8 +371,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     element_numbers_merged = element_numbers_merged[sorted_on_masses,:]
                     masses_new = masses_merged
                     element_numbers_new = element_numbers_merged
-
-                new_masslist = mo._Data(masses_new,element_numbers_new)
+                compound_names = mo.get_names_out_of_element_numbers(element_numbers_new)
+                new_masslist = mo._Data(masses_new,element_numbers_new,compound_names)
                 self.ml = mo.Mass_iso_sugglist(new_masslist)
                 self.ml.redo_qlist(self.masslist_widget)
 
@@ -439,7 +439,10 @@ class MainWindow(QtWidgets.QMainWindow):
         xlims, ylims = self.vb.viewRange()
         if ev.double() and np.diff(xlims) < 1.1:
             xpos = self.vb.mapToView(ev.pos()).x()
-            self.ml.add_mass_to_masslist(self, xpos)
+            # look whether there are suggestions nearby
+            threshold_closeness = np.diff(xlims) * 0.01 # should be 0.01 percent of the current view near
+            nearest_mass_or_suggestion = self.ml.check_whether_suggmass_nearby(xpos,self.ml.suggestions,threshold_closeness)
+            self.ml.add_mass_to_masslist(self, nearest_mass_or_suggestion)
             pyqtgraph_objects.redraw_localfit(self,xlims)
 
 
