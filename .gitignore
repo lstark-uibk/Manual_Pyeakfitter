@@ -1,6 +1,6 @@
 /tests.py
 /tests2.py
-/workflows/config.ini
+/workflows_pyeakfitter/config.ini
 /dist/
 /build/
 /interpolation_plots.py

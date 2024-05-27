@@ -5,9 +5,9 @@ import os
 from PyQt5.QtCore import *
 from PyQt5 import QtWidgets, QtGui, QtCore
 import sys
-import workflows.masslist_objects as mo
-import workflows.pyqtgraph_objects as pyqtgraph_objects
-import workflows.pyqt_objects as po
+import workflows_pyeakfitter.masslist_objects as mo
+import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_pyeakfitter.pyqt_objects as po
 import datetime as dt
 import configparser
 import re

@@ -2,7 +2,7 @@ import pyqtgraph as pg
 from pyqtgraph import functions as fn
 from pyqtgraph.graphicsItems.TextItem import TextItem
 from pyqtgraph.Qt import QtCore
-import workflows.masslist_objects as mf
+import workflows_pyeakfitter.masslist_objects as mf
 import PyQt5.QtGui as QtGui
 import numpy as np
 import datetime as dt

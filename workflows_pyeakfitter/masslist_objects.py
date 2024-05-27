@@ -2,8 +2,8 @@ import numpy as np
 import math
 import h5py
 import itertools
-import workflows.pyqtgraph_objects as pyqtgraph_objects
-import workflows.pyqt_objects as po
+import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_pyeakfitter.pyqt_objects as po
 import pyqtgraph as pg
 import PyQt5.QtCore as QtCore
 import PyQt5.QtWidgets as QtWidgets

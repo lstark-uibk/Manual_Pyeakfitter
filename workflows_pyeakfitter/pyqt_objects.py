@@ -6,8 +6,8 @@ import re
 
 import pandas as pd
 
-import workflows.pyqtgraph_objects as pyqtgraph_objects
-import workflows.masslist_objects as mo
+import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_pyeakfitter.masslist_objects as mo
 from PyQt5.QtCore import Qt
 
 import configparser
