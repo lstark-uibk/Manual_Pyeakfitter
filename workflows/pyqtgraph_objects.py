@@ -136,13 +136,13 @@ def replot_spectra(parent, plotsetting_show):
         parent.graphWidget.removeItem(parent.spectrum_max_plot)
     if plotsetting_show[1]:
         parent.spectrum_max_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_max,
-                                                       pen={'color': parent.plot_settings["max_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="max spectrum")
+                                                       pen={'color': parent.plot_settings["max_spectrum_color"], 'width': 1}, name="max spectrum")
         parent.spectrum_max_plot.setLogMode(None, True)
     if parent.spectrum_min_plot:
         parent.graphWidget.removeItem(parent.spectrum_min_plot)
     if plotsetting_show[2]:
         parent.spectrum_min_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_min,
-                                                       pen={'color': parent.plot_settings["min_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="min spectrum")
+                                                       pen={'color': parent.plot_settings["min_spectrum_color"], 'width': 1}, name="min spectrum")
         parent.spectrum_min_plot.setLogMode(None, True)
     if parent.subspec_plot:
         parent.graphWidget.removeItem(parent.subspec_plot)
