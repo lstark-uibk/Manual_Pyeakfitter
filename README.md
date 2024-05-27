@@ -19,7 +19,7 @@ Running the Manual Pyeakfitter from Python give acces to the latest developments
 Latest running on Python  3.11.4 
 
 Needs packages:
-PyQt5, pyqtgraph, pandas, numpy, h5py
+PyQt5, pyqtgraph, pandas, numpy, h5py, scipy
 
 Latest running versions:
 - Pyqt   5.15.9 
