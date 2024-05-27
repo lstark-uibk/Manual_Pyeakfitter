@@ -2,13 +2,14 @@ import numpy as np
 import math
 import h5py
 import datetime
-
+import random
 import pyqtgraph
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
 import pyqtgraph as pg
 import  workflows_pyeakfitter.pyqtgraph_objects as pyqto
+import workflows_pyeakfitter.masslist_objects as mo
 import re
 class Traces():
     MasslistElements =["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S","S(34)", "I", "Si"] #iodine, silizium
@@ -186,7 +187,7 @@ class QlistWidget_Masslist(QListWidget):
         self.clear()
         for index , (mass,element_numbers) in enumerate(zip(MasslistMasses, MasslistCompositions)):
             index += 1
-            item = QListWidgetItem(f"{str(index)}\t{str(round(mass,6))} {get_names_out_of_element_numbers(element_numbers)}")
+            item = QListWidgetItem(f"{str(index)}\t{str(round(mass,6))} {mo.get_names_out_of_element_numbers(element_numbers)}")
             # item.setFlags(item.flags() | 1)  # Add the Qt.ItemIsUserCheckable flag
             # item.setCheckState(0)  # 0 for Unchecked, 2 for Checked
             self.addItem(item)
@@ -210,7 +211,8 @@ class QlistWidget_Masslist(QListWidget):
                 self.setCurrentItem(self.item(lower_index))
                 self.check_multiple(lower_index,upper_index,parent)
     def jump_to_compound(self,compoundstring,parent):
-        mass, elementnumber = get_element_numbers_out_of_names(compoundstring)
+        print(compoundstring)
+        mass, elementnumber = mo.get_element_numbers_out_of_names(compoundstring)
         self.jump_to_mass(str(mass),parent)
     def masslist_tick_changed(self,parent):
         if self.load_on_tick:
@@ -351,6 +353,18 @@ class QlistWidget_Selected_Masses(QListWidget):
             (75, 0, 130),    # Indigo
             (0, 128, 0),     # Green
             (240, 128, 128)] # LightCoral
+
+        def random_color():
+            """
+            Generate a random color in RGB format.
+            """
+            r = random.randint(0, 255)  # Red component
+            g = random.randint(0, 255)  # Green component
+            b = random.randint(0, 255)  # Blue component
+            return (r, g, b)
+
+        for x in range(0, 1000):
+            self.defaultcolorcycle.append(random_color())
         self.defaultcolorassignment = {}
         self.highlight_this_mass_vline = []
 
@@ -377,69 +391,98 @@ class QlistWidget_Selected_Masses(QListWidget):
             lowermass = float(lowermass)
             uppermass = float(uppermass)
             if lowermass < uppermass:
-                lower_index = np.argmin(np.abs(parent.masslist_widget.masses - lowermass))
-                upper_index = np.argmin(np.abs(parent.masslist_widget.masses - uppermass))
+                lower_index = np.argmin(np.abs(parent.masslist_frame.masslist_widget.masses - lowermass))
+                upper_index = np.argmin(np.abs(parent.masslist_frame.masslist_widget.masses - uppermass))
 
-                print(lower_index,upper_index)
-                new_masses = parent.masslist_widget.masses[lower_index:upper_index]
-                new_compositions = parent.masslist_widget.compositions[lower_index:upper_index]
+                # print(lower_index,upper_index)
+                new_masses = parent.masslist_frame.masslist_widget.masses[lower_index:upper_index]
+                new_compositions = parent.masslist_frame.masslist_widget.compositions[lower_index:upper_index]
                 print(f"new mass {new_masses}, {new_compositions}")
                 for new_mass,new_composition in zip(new_masses,new_compositions):
                     if new_mass not in self.selectedmasses:
                         self.selectedmasses = np.append(self.selectedmasses, new_mass)
                         self.selectedcompositions = np.append(self.selectedcompositions, [new_composition], axis=0)
-                print(self.selectedmasses,self.selectedcompositions)
+                # print(self.selectedmasses,self.selectedcompositions)
                 parent.tr.update_Traces(self.selectedmasses)
                 self.redo_qlist()
                 parent.update_plots()
 
+    def add_compound(self,text,parent):
+        mass, elementnumber = mo.get_element_numbers_out_of_names(text)
+        print(mass,elementnumber)
+        elementnumber = elementnumber[0:8]
+        if mass in parent.masslist_frame.masslist_widget.masses:
+            self.add_one_mass(mass, np.array(elementnumber), parent)
+            parent.masslist_frame.jump_to_compound_status.setText("")
+        else:
+            parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
+
     def add_item_to_selected_masses(self,item,button,parent):
-        default_widow = 0.05
-        row = int(parent.masslist_widget.row(item))
-        print(f"index {row}")
-        massclickedon = parent.masslist_widget.masses[row]
-        new_composition = parent.masslist_widget.compositions[row, :]
-        print(f"new mass {massclickedon}, {new_composition}")
         if button == 1:#left click
-            if massclickedon not in self.selectedmasses:
-                self.selectedmasses = np.append(self.selectedmasses, massclickedon)
-                self.selectedcompositions = np.append(self.selectedcompositions, [new_composition], axis=0)
-            print(self.selectedmasses, self.selectedcompositions)
+            row = int(parent.masslist_frame.masslist_widget.row(item))
+            print(f"index {row}")
+            massclickedon = parent.masslist_frame.masslist_widget.masses[row]
+            compositionclickedon = parent.masslist_frame.masslist_widget.compositions[row, :]
+            self.add_one_mass(massclickedon,compositionclickedon,parent)
+    def add_one_mass(self,mass,composition,parent):
+        '''
+
+        Parameters
+        ----------
+        mass: float
+        composition: np.array()
+        parent
+
+        Returns
+        -------
+
+        '''
+        default_widow = 0.05
+
+        print(f"new mass {mass}, {composition}")
+        if mass not in self.selectedmasses:
+            self.selectedmasses = np.append(self.selectedmasses, mass)
+            self.selectedcompositions = np.append(self.selectedcompositions, [composition], axis=0)
             parent.tr.update_Traces(self.selectedmasses)
             self.redo_qlist()
             parent.update_plots()
-        # elif button == 2:
-            # update the current peak
-            parent.graph_peak_Widget.removeItem(self.highlight_this_mass_vline)
-            self.highlight_this_mass_vline = []
-            print(f"Right click update peak plot for mass {massclickedon}")
-            color_this_mass = self.defaultcolorcycle[np.where(self.selectedmasses == massclickedon)[0][0]]
-            print(color_this_mass)
-            parent.peakmasscolor.set_color(color_this_mass)
-            parent.peakmasslabel.setText(str(round(massclickedon,6)))
-            xlims = (massclickedon-default_widow,massclickedon+default_widow)
-            # pyqto.replot_spectra(parent,parent.graph_peak_Widget,parent.plot_settings["show_plots"],alterable_plot=False)
-            parent.vb_peak.setXRange(*xlims)
-            pyqto.redraw_vlines(parent,parent.graph_peak_Widget,xlims,not_changeable=True)
-            if new_composition.sum() > 0:
-                # if we have any entries in the composition
-                vertlinecol = parent.plot_settings["vert_lines_color_masslist"]
-            else:
-                vertlinecol = parent.plot_settings["vert_lines_color_masslist_without_composition"]
-            self.highlight_this_mass_vline = pyqtgraph.InfiniteLine(pos=massclickedon, pen = {"color": vertlinecol, "width": 4},angle = 90)
-            self.highlight_this_mass_vline.setZValue(2000)
-            parent.graph_peak_Widget.addItem(self.highlight_this_mass_vline)
-            pyqto.redraw_localfit(parent,parent.graph_peak_Widget,xlims)
+
+        # update the current peak
+        parent.plot_peak_frame.graph_peak_Widget.removeItem(self.highlight_this_mass_vline)
+        self.highlight_this_mass_vline = []
+        print(f"Right click update peak plot for mass {mass}")
+        color_this_mass = self.defaultcolorcycle[np.where(self.selectedmasses == mass)[0][0]]
+        print(color_this_mass)
+        parent.plot_peak_frame.peakmasscolor.set_color(color_this_mass)
+        parent.plot_peak_frame.peakmasslabel.setText(str(round(mass,6)))
+        xlims = (mass-default_widow,mass+default_widow)
+        # pyqto.replot_spectra(parent,parent.graph_peak_Widget,parent.plot_settings["show_plots"],alterable_plot=False)
+        parent.vb_peak.setXRange(*xlims)
+        pyqto.redraw_vlines(parent,parent.plot_peak_frame.graph_peak_Widget,xlims,not_changeable=True)
+        if composition.sum() > 0:
+            # if we have any entries in the composition
+            vertlinecol = parent.plot_settings["vert_lines_color_masslist"]
+        else:
+            vertlinecol = parent.plot_settings["vert_lines_color_masslist_without_composition"]
+        self.highlight_this_mass_vline = pyqtgraph.InfiniteLine(pos=mass, pen = {"color": vertlinecol, "width": 4},angle = 90)
+        self.highlight_this_mass_vline.setZValue(2000)
+        parent.plot_peak_frame.graph_peak_Widget.addItem(self.highlight_this_mass_vline)
+        pyqto.redraw_localfit(parent,parent.plot_peak_frame.graph_peak_Widget,xlims)
 
 
     def add_index_to_selected_masses(self,lower_index,parent,upper_index = 0):
-        print(f"--------------{lower_index},{upper_index}")
+        # print(f"--------------{lower_index},{upper_index}")
         if upper_index == 0:
-            self.selectedmasses = np.append(self.selectedmasses, parent.masslist_widget.masses[lower_index])
-            self.selectedcompositions = np.append(self.selectedcompositions, parent.masslist_widget.compositions[lower_index], axis=0)
+            for_addition = parent.masslist_frame.masslist_widget.masses[lower_index]
+            mask_duplicates = np.isin(for_addition, self.selectedmasses, invert=False)
+
+            self.selectedmasses = np.append(self.selectedmasses, for_addition[~mask_duplicates])
+            self.selectedcompositions = np.append(self.selectedcompositions, parent.masslist_frame.masslist_widget.compositions[lower_index,:][~mask_duplicates,:], axis=0)
         else:
-            self.selectedmasses = np.append(self.selectedmasses, parent.masslist_widget.masses[lower_index:upper_index])
-            self.selectedcompositions = np.append(self.selectedcompositions, parent.masslist_widget.compositions[lower_index:upper_index], axis=0)
+            for_addition = parent.masslist_frame.masslist_widget.masses[lower_index:upper_index]
+            mask_duplicates =np.isin(for_addition, self.selectedmasses, invert=False)
+            self.selectedmasses = np.append(self.selectedmasses, for_addition[~mask_duplicates])
+            self.selectedcompositions = np.append(self.selectedcompositions, parent.masslist_frame.masslist_widget.compositions[lower_index:upper_index,:][~mask_duplicates,:], axis=0)
 
         parent.tr.update_Traces(self.selectedmasses)
         self.redo_qlist()
@@ -458,7 +501,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         self.clear()
         for index , (mass,element_numbers,color) in enumerate(zip(self.selectedmasses, self.selectedcompositions,self.defaultcolorcycle)):
             index += 1
-            item = QListWidgetItem(f"{str(index)}\t{str(round(mass,6))} {get_names_out_of_element_numbers(element_numbers)}")
+            item = QListWidgetItem(f"{str(index)}\t{str(round(mass,6))} {mo.get_names_out_of_element_numbers(element_numbers)}")
             #make color alpha
             color = color+(30,)
             QListWidgetItem.setBackground(item,QColor(*color))
@@ -497,66 +540,6 @@ class QlistWidget_Selected_Masses(QListWidget):
         parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
 
-    def check_multiple(self, lower, upper, parent):
-        """
-
-        :param checkstate: True or False
-        :return:
-        """
-        if upper - lower > 100:
-            print("Too many traces selected, only plot first 100")
-            upper = lower + 100
-        self.load_on_tick = False
-        for i in range(lower, upper):
-            item = self.item(i)
-            item.setCheckState(Qt.Checked)
-            self.currentmasses = np.append(self.currentmasses, self.masses[i])
-            self.currentcompositions = np.append(self.currentcompositions, [self.compositions[i, :]], axis=0)
-        self.load_on_tick = True
-
-        parent.tr.update_Traces(self.currentmasses)
-        parent.update_plots()
-
-    def uncheck_all(self, parent):
-        self.load_on_tick = False
-        for i in range(self.count()):
-            item = self.item(i)
-            item.setCheckState(Qt.Unchecked)
-        self.load_on_tick = True
-        self.currentmasses = np.array([])
-        self.currentcompositions = np.zeros((0, 8))
-
-        parent.tr.update_Traces(self.currentmasses)
-        parent.update_plots()
-
-    def handle_double_click(self, item, parent):
-        print(f"Double-clicked: {item.text()}")
-        list = re.split(r'[ \t]+', item.text())
-        mass = float(list[1])
-        if not np.any(mass == self.fixedMasses):
-            # add the mass to fixed
-            item.setBackground(Qt.red)
-            if len(list) >= 3:
-                compoundstr = str(list[2])
-                if len(list) == 4:
-                    compoundstr += str(list[3])
-                _, compositionarray = get_element_numbers_out_of_names(compoundstr)
-            self.fixedMasses = np.append(self.fixedMasses, mass)
-            self.fixedcompositions = np.append(self.fixedcompositions, compositionarray[None, :], axis=0)
-            Trace = parent.tr.load_Traces(mass)
-            if parent.tr.FixedTraces.size == 0:
-                parent.tr.FixedTraces = np.zeros((0, Trace.size))
-            parent.tr.FixedTraces = np.append(parent.tr.FixedTraces, parent.tr.load_Traces(mass)[None, :], axis=0)
-        else:
-            # if it is already in fixed -> delete it
-            # add the mass to fixed
-            item.setBackground(QColor(255, 255, 255))
-            index_of_deletion = np.where(self.fixedMasses == mass)
-            self.fixedMasses = np.delete(self.fixedMasses, index_of_deletion)
-            self.fixedcompositions = np.delete(self.fixedcompositions, index_of_deletion, axis=0)
-            parent.tr.FixedTraces = np.delete(parent.tr.FixedTraces, index_of_deletion, axis=0)
-
-        parent.update_plots()
 
 
 class Sorting():
@@ -579,119 +562,33 @@ class Sorting():
         qlist.redo_qlist(qlist.masses, qlist.compounds)
 
 
-def get_names_out_of_element_numbers(compound_array):
-    # only if any compounds are in compound array give a string
-    '''Get the compound name out of a compound array
-
-    Parameters
-    ----------
-    compound_array : np.array (nr_elements, nr_compounds)
-        corresponding to the rules used in Masslist object
-
-    Returns
-    -------
-    compoundname_list:
-        str if compound_array is (nr_elements, 1)
-            compound name
-        list if (nr_elements, nr_compounds)
-            compound names
-    '''
-
-    compoundname_list = []
-
-    for compound in compound_array:
-        if len(compound_array.shape) == 1:
-            compound = compound_array
-        if np.any(compound):
-            order_of_letters = Traces.Order_of_letters
-            names_elements = Traces.MasslistElements
-            compoundletters = ""
-            for index, order in enumerate(order_of_letters):
-                # before the last letter (H+) add a " "
-                if order < compound.shape[0]:
-                    if index == len(order_of_letters)-1:
-                        compoundletters += " "
-                    if compound[order] == 0:
-                        pass
-                    if compound[order] == 1:
-                        compoundletters += names_elements[order]
-                    if compound[order] > 1:
-                        compoundletters += names_elements[order] + str(round(compound[order]))
-            compoundname_list.append(compoundletters)
-            if len(compound_array.shape) == 1:
-                return compoundletters
-        else:
-            if len(compound_array.shape) == 1:
-                return ""
-            compoundname_list.append("")
-
-    return compoundname_list
 
 
-def get_element_numbers_out_of_names(namestring):
-    '''Get the compound name out of a compound array
-
-    Parameters
-    ----------
-    namestring : str characters and numbers in any order
-
-    Returns
-    -------
-    mass: float
-        mass of the compound
-    element_numbers: np.array (nr_elemets)
 
 
-    '''
-    ion = False
-    if "+" in namestring:
-        ion = True
-        namestring = namestring.replace("+","")
+# tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
+# traces = tr.load_Traces("all")
 
-    charlist = re.split(r'([a-zA-Z]\d+)|([a-zA-Z](?=[a-zA-Z]))', namestring)
-    charlist = np.array([part for part in charlist if part],dtype="str")
+def robust_scale(data):
+    # Calculate the median and interquartile range (IQR) for each signal
+    median_vals = np.median(data, axis=1, keepdims=True)
+    q1 = np.percentile(data, 25, axis=1, keepdims=True)
+    q3 = np.percentile(data, 75, axis=1, keepdims=True)
+    iqr = q3 - q1
 
-    elements = np.array([""]*charlist.size, dtype = "str")
-    numbers = np.zeros(charlist.size)
-    for index, el_num in enumerate(charlist):
-        if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
-            splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
-            splitted = [part for part in splitted if part]
-            element, number = splitted
-            number = int(number)
-            if element not in elements: #if the element is not already considered
-                elements[index] = element
-                numbers[index] = number
-            else: #takes care of double writing eg C7H8NH4+
-                numbers[element == elements] += number
-        else:  # Character followed by another character
-            if el_num not in elements: #if the element is not already considered
-                elements[index] = el_num
-                numbers[index] = 1
-            else: #takes care of double writing eg C7H8NH4+
-                numbers[el_num == elements] += 1
+    # Robust scaling
+    scaled_data = (data - median_vals) / iqr
+
+    return scaled_data[0,:,:]
 
 
-    if ion:
-        elements = np.append(elements,"H+")
-        numbers = np.append(numbers,1)
-        number_H_mask = np.array([x.lower() for x in elements], dtype='str') == "h"
-        if numbers[number_H_mask] > 0: # if the H number is more than 0
-            numbers[number_H_mask] -= 1
+def highest_change_signal(data):
+    # Scale the data using robust scaling
+    scaled_data = robust_scale(data)
 
-    elementsinstring_lower = np.array([x.lower() for x in elements], dtype = 'str')
-
-    names_elements = Traces.MasslistElements
-    compound_array = np.array([0] * len(names_elements))
-    for index,element in enumerate(names_elements):
-        #make it lower, so that we have more freedom in writing
-        element_lower = element.lower()
-        if np.any(element_lower == elementsinstring_lower):
-            compound_array[index] = numbers[element_lower == elementsinstring_lower]
-
-    mass = np.sum(compound_array*Traces.MasslistElementsMasses)
-    return mass, compound_array
+    # Compute the sum of absolute differences for each signal
+    sum_abs_diff = np.sum(np.abs(np.diff(scaled_data, axis=1)), axis=1)
 
 
-tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
-tr.load_Traces("all")
+    return sum_abs_diff
+

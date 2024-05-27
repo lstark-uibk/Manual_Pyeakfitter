@@ -5,6 +5,8 @@ import workflows_ptg.trace_objects as to
 from PyQt5.QtCore import *
 import numpy as np
 import pyqtgraph as pg
+from scipy.ndimage import uniform_filter1d
+
 class ColorField(QtWidgets.QWidget):
     def __init__(self, color, parent=None):
         self.color = color
@@ -70,6 +72,8 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
+        self.jump_to_compound_status = QtWidgets.QLabel("")
+        self.jump_to_compound_layout.addWidget(self.jump_to_compound_status)
         # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
 
         self.sort_mass = to.Sorting(self, self.sorting_layout, self.sort_on_mass, "Sort masses")
@@ -90,17 +94,34 @@ class Masslist_Frame(QtWidgets.QFrame):
     def sort_biggest_relative_difference(self, traces):
         if traces.ndim == 3:
             traces = traces[0]
-        rel_diffs = np.empty(traces.shape[0])
-        for i, trace in enumerate(traces):
-            if np.mean(trace) > 0.7 * np.std(trace):
-                # preselect for noise
-                biggestdiff = np.ptp(trace)
-                mean = np.mean(trace)
-                rel_diff = biggestdiff / mean
-                rel_diffs[i] = rel_diff
-            else:
-                rel_diffs[i] = 0
-        sorted = np.argsort(rel_diffs)[::-1]
+
+        def robust_scale(data):
+            # Calculate the median and interquartile range (IQR) for each signal
+            median_vals = np.median(data, axis=1, keepdims=True)
+            q1 = np.percentile(data, 25, axis=1, keepdims=True)
+            q3 = np.percentile(data, 75, axis=1, keepdims=True)
+            iqr = q3 - q1
+
+            # Robust scaling
+            scaled_data = (data - median_vals) / iqr
+
+            return scaled_data
+        smoothed_data = uniform_filter1d(traces, size=30, mode='nearest')
+        scaled_data = robust_scale(smoothed_data)
+        sum_abs_diff = np.sum(np.abs(np.diff(scaled_data, axis=1)), axis=1)
+
+        sorted = np.argsort(sum_abs_diff)[::-1]
+        # rel_diffs = np.empty(traces.shape[0])
+        # for i, trace in enumerate(traces):
+        #     if np.mean(trace) > 0.7 * np.std(trace):
+        #         # preselect for noise
+        #         biggestdiff = np.ptp(trace)
+        #         mean = np.mean(trace)
+        #         rel_diff = biggestdiff / mean
+        #         rel_diffs[i] = rel_diff
+        #     else:
+        #         rel_diffs[i] = 0
+        # sorted = np.argsort(rel_diffs)[::-1]
         return sorted
 
     def sorting_max(self, traces):
@@ -119,7 +140,7 @@ class SelectedMassesFrame(QtWidgets.QFrame):
         self.setLayout(self.layout)
         self.masses_selected_widget = to.QlistWidget_Selected_Masses(self)
         self.header = QtWidgets.QHBoxLayout()
-        self.header.addWidget(QtWidgets.QLabel("Selected Masses"))
+        # self.header.addWidget(QtWidgets.QLabel("Selected Masses"))
         self.deselectall_button = QtWidgets.QPushButton("Deselect all")
         self.export_button = QtWidgets.QPushButton("Export as .csv")
         self.header.addWidget(self.deselectall_button)

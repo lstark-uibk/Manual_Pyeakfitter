@@ -49,7 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         print("Initializing Window")
         self.setWindowTitle("PlottingTracesGui")
-
+        self.setGeometry(300, 100, 1500, 800)
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
         self.filename = None
@@ -58,11 +58,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_Ui_file_not_loaded()
 
         # to not load file everytime uncomment here
-        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
-        # self.init_basket_objects()
-        # self.init_UI_file_loaded()
-        # self.init_plots()
-        # self.file_loaded = True
+        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
+        self.init_basket_objects()
+        self.init_UI_file_loaded()
+        self.init_plots()
+        self.file_loaded = True
 
 
 
@@ -70,144 +70,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.centralwidget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.centralwidget)
         # main layout setup
-        self.overallverticallayout = QtWidgets.QVBoxLayout(self.centralwidget) # all with bar for files and interaction laout
-        self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal)
-        # self.horizontal_splitter.setSizes([1000, 2000])
-        # self.horizontal_splitter.setMinimumSize(100, 100)
-        # self.horizontal_splitter.setMaximumSize(400, 1000)
-        # self.horizontalLayout = QtWidgets.QHBoxLayout() # overall horizontallayout with left column and plot
+        self.overallverticallayout = QtWidgets.QVBoxLayout(self.centralwidget) # all with menubar and interaction layout
 
-        self.left_splitter_masslist_info = QtWidgets.QSplitter(Qt.Vertical)
-        self.horizontal_splitter.addWidget(self.left_splitter_masslist_info)
-        # self.horizontal_splitter.addWidget(QtWidgets.QLabel("ji"))
-        self.masslist_frame = po.Masslist_Frame()
-        self.left_splitter_masslist_info.addWidget(self.masslist_frame)
-        self.splitter_selected_peak = QtWidgets.QSplitter(Qt.Horizontal)
-        self.left_splitter_masslist_info.addWidget(self.splitter_selected_peak)
-
-        self.masses_selected_frame = po.SelectedMassesFrame()
-        self.splitter_selected_peak.addWidget(self.masses_selected_frame)
-
-        self.plot_peak_frame = po.Peak_Frame()
-        self.splitter_selected_peak.addWidget(self.plot_peak_frame)
-        # self.left_column_layout = QtWidgets.QVBoxLayout() #layout on the left with the masslist, and other stuff
-        # self.infoonmasses_layout = QtWidgets.QHBoxLayout()
-        # self.masses_selected_layout = QtWidgets.QVBoxLayout()
-        # self.peak_info_layout = QtWidgets.QVBoxLayout()
-        # self.masslists_layout = QtWidgets.QVBoxLayout()
-        # self.left_column_layout.addLayout(self.masslists_layout)
-        # self.left_column_layout.addLayout(self.infoonmasses_layout)
-        # self.left_column_layout.setStretch(0,2)
-        # self.left_column_layout.setStretch(1,1)
-        # self.plot_layout = QtWidgets.QVBoxLayout()  #laout on the right with the graph
-        # self.jump_to_mass_layout = QtWidgets.QHBoxLayout()
-        # self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
-        # self.multiple_check_layout = QtWidgets.QHBoxLayout()
-        # self.sorting_layout = QtWidgets.QHBoxLayout()
-
-
-        # self.horizontalLayout.addLayout(self.left_column_layout)
-        # self.horizontalLayout.addLayout(self.plot_layout)
-        # self.horizontalLayout.setStretch(0, 2)
-        # self.horizontalLayout.setStretch(1,3)
-        # self.masslists_layout.addLayout(self.multiple_check_layout)
-        # self.masslists_layout.addLayout(self.jump_to_mass_layout)
-        # self.masslists_layout.addLayout(self.jump_to_compound_layout)
-        # self.masslists_layout.addLayout(self.sorting_layout)
-
-        # plot widget for the plot_layout
-        self.graphWidget = pg.PlotWidget()
-        axis = pg.DateAxisItem()
-        self.graphWidget.setAxisItems({'bottom': axis})
-        self.horizontal_splitter.addWidget(self.graphWidget)
-
-
-        # #show peak info
-        # self.peak_info_layout_header = QtWidgets.QHBoxLayout()
-        # self.peak_info_layout_header.addWidget(QtWidgets.QLabel("Peak of selected Mass"))
-        # self.peakmasslabel = QtWidgets.QLabel("")
-        # self.peak_info_layout_header.addWidget(self.peakmasslabel)
-        # self.peakmasscolor = po.ColorField((0,0,0))
-        # self.peak_info_layout_header.addWidget(self.peakmasscolor)
-        # # self.peak_info_deselectall_button = QtWidgets.QPushButton("Deselect")
-        # # self.peak_info_layout_header.addWidget(self.peak_info_deselectall_button)
-        # self.plot_peak_layout = QtWidgets.QVBoxLayout()
-        # self.graph_peak_Widget = pg.PlotWidget()
-        # axis = pg.DateAxisItem()
-        # self.graph_peak_Widget.setAxisItems({'bottom': axis})
-        # self.plot_peak_layout.addWidget(self.graph_peak_Widget)
-        #
-        # self.horizontal_splitter.addWidget(self.left_splitter_masslist_info)
-        # self.left_splitter_masslist_info.addWidget(self.graphWidget)
-        #
-        # # list of masses
-        # self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
-        # regex = QRegExp(r'^-?\d+(-\d+)?$')
-        # # Create a validator based on the regular expression
-        # self.multiple_check = QtWidgets.QLineEdit()
-        # validator = QRegExpValidator(regex, self.multiple_check)
-        # self.multiple_check.setValidator(validator)
-        # multiple_check_label = QtWidgets.QLabel("Select traces (e.g. 1-10)")
-        # self.multiple_check_OK_Button = QtWidgets.QPushButton("OK")
-        # self.multiple_check_layout.addWidget(multiple_check_label)
-        # self.multiple_check_layout.addWidget(self.multiple_check)
-        # # self.multiple_check_layout.addWidget(self.multiple_check_OK_Button)
-        #
-        #
-        #
-        #
-        #
-        # self.label_jump_mass = QtWidgets.QLabel("Select masses (e.g. 69.420-70): ")
-        # self.jump_to_mass_input = QtWidgets.QLineEdit()
-        # regexmass = QRegExp(r'^\d+(\.\d*)?(-(\d+)(\.\d*)?)?$')
-        # validator = QRegExpValidator(regexmass, self.jump_to_mass_input)
-        # self.jump_to_mass_input.setValidator(validator)
-        # self.jump_to_mass_layout.addWidget(self.label_jump_mass)
-        # self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
-        #
-        # self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+): ")
-        # self.jump_to_compound_input = QtWidgets.QLineEdit()
-        # regexcomp = QRegExp(r'^(([a-zA-Z]+)(\d+)?)+\+$')
-        # validatorcomp = QRegExpValidator(regexcomp, self.jump_to_compound_input)
-        # self.jump_to_compound_input.setValidator(validatorcomp)
-        # self.jump_to_compound_button = QtWidgets.QPushButton("OK")
-        # self.jump_to_mass_layout.addWidget(self.label_jump_mass)
-        # self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
-        # self.jump_to_compound_layout.addWidget(self.label_jump_compound)
-        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-        # # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
-        #
-        # def sort_on_mass(masses):
-        #     sorted = np.argsort(masses)
-        #     return sorted
-        # self.sort_mass = to.Sorting(self,self.sorting_layout, sort_on_mass, "Sort masses")
-        #
-        # def sort_biggest_relative_difference(traces):
-        #     if traces.ndim == 3:
-        #         traces = traces[0]
-        #     rel_diffs = np.empty(traces.shape[0])
-        #     for i, trace in enumerate(traces):
-        #         if np.mean(trace) > 0.7 * np.std(trace):
-        #             #preselect for noise
-        #             biggestdiff = np.ptp(trace)
-        #             mean = np.mean(trace)
-        #             rel_diff = biggestdiff / mean
-        #             rel_diffs[i] = rel_diff
-        #         else: rel_diffs[i] = 0
-        #     sorted = np.argsort(rel_diffs)[::-1]
-        #     return sorted
-        # self.sort_rel = to.Sorting(self, self.sorting_layout, sort_biggest_relative_difference, "Sorting on highest rel diff")
-        #
-        # def sorting_max(traces):
-        #     if traces.ndim == 3:
-        #         traces = traces[0]
-        #     means = np.mean(traces, axis=1)
-        #     sorted = np.argsort(means)
-        #     sorted = sorted[::-1]
-        #     return sorted
-        # self.sort_max = to.Sorting(self,self.sorting_layout,sorting_max, "Sorting on highest trace")
-        #
-        # create menu
+        #menubar
         menubar = QtWidgets.QMenuBar()
         self.actionFile = menubar.addMenu("File")
         # the po.openfile triggers init_UI_file_loaded() and init_plots()
@@ -227,20 +92,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plotsettings_button = QtWidgets.QAction("Plot Settings", self)
         self.settingsMenubar.addAction(self.plotsettings_button)
 
-
         self.overallverticallayout.addWidget(menubar,stretch = 1)
+        self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal) # first horizontal splitter with masslist on left and traces on right
         self.overallverticallayout.addWidget(self.horizontal_splitter,stretch = 40)
-        # self.masses_selected_layout.addLayout(self.masses_selected_layout_header, stretch = 10)
-        # self.masses_selected_layout.addWidget(self.masses_selected_widget, stretch = 10)
-        #
-        # self.peak_info_layout.addLayout(self.peak_info_layout_header)
-        # self.peak_info_layout.addLayout(self.plot_peak_layout)
-        # self.infoonmasses_layout.addLayout(self.masses_selected_layout,stretch = 3)
-        # self.infoonmasses_layout.addLayout(self.peak_info_layout,stretch = 2)
-        #
-        #
-        # self.masslists_layout.addWidget(QtWidgets.QLabel("Masslist"),stretch = 1)
-        # self.masslists_layout.addWidget(self.masslist_widget,stretch = 40)
+
+        self.left_splitter_masslist_info = QtWidgets.QSplitter(Qt.Vertical) # vertical splitter with masslist on top and selected masses at bottom
+        self.masslist_frame = po.Masslist_Frame()
+        self.left_splitter_masslist_info.addWidget(self.masslist_frame)
+        self.horizontal_splitter.addWidget(self.left_splitter_masslist_info)
+
+        # plot widget for the plot_layout
+        self.graphWidget = pg.PlotWidget()
+        axis = pg.DateAxisItem()
+        self.graphWidget.setAxisItems({'bottom': axis})
+        self.horizontal_splitter.addWidget(self.graphWidget)
+
+        self.splitter_selected_peak = QtWidgets.QSplitter(Qt.Horizontal) # horizontal splitter with selected masses left and peak on right
+        self.masses_selected_frame = po.SelectedMassesFrame()
+        self.splitter_selected_peak.addWidget(self.masses_selected_frame)
+        self.plot_peak_frame = po.Peak_Frame()
+        self.splitter_selected_peak.addWidget(self.plot_peak_frame)
+        self.left_splitter_masslist_info.addWidget(self.splitter_selected_peak)
+
+
+        self.horizontal_splitter.setSizes([500, 1000])
+        self.left_splitter_masslist_info.setSizes([500, 300])
+        self.splitter_selected_peak.setSizes([50, 300])
 
 
     def open_file(self):
@@ -296,25 +173,25 @@ class MainWindow(QtWidgets.QMainWindow):
         #add functionality to:
         #slider
         # masslist shown on left
-        self.masslist_widget.redo_qlist(self.tr.MasslistMasses, self.tr.MasslistCompositions)
+        self.masslist_frame.masslist_widget.redo_qlist(self.tr.MasslistMasses, self.tr.MasslistCompositions)
         # self.masslist_widget.itemClicked.connect(self.jump_to_mass)
-        self.masslist_widget.itemClicked.connect(lambda item,button: self.masses_selected_widget.add_item_to_selected_masses(item,button,self))
-        self.masses_selected_widget.itemClicked.connect(lambda item,button: self.masses_selected_widget.clicked_on_item(item,button,self))
-        self.masses_selected_deselectall_button.clicked.connect(lambda: self.masses_selected_widget.deselect_all(self))
-        self.masses_selected_export_button.clicked.connect(self.export_currently_selected_masses_to_csv)
+        self.masslist_frame.masslist_widget.itemClicked.connect(lambda item,button: self.masses_selected_frame.masses_selected_widget.add_item_to_selected_masses(item,button,self))
+        self.masses_selected_frame.masses_selected_widget.itemClicked.connect(lambda item,button: self.masses_selected_frame.masses_selected_widget.clicked_on_item(item,button,self))
+        self.masses_selected_frame.deselectall_button.clicked.connect(lambda: self.masses_selected_frame.masses_selected_widget.deselect_all(self))
+        self.masses_selected_frame.export_button.clicked.connect(self.export_currently_selected_masses_to_csv)
         # self.masslist_widget.itemDoubleClicked.connect(lambda item: self.masslist_widget.handle_double_click(item, parent=self))
 
         #jump to mass widget
-        self.jump_to_mass_input.returnPressed.connect(lambda: self.masses_selected_widget.add_mass_to_selected_masses(self.jump_to_mass_input.text(),self))
-        self.jump_to_compound_button.pressed.connect(lambda: self.masslist_widget.jump_to_compound(self.jump_to_compound_input.text(),self))
-        self.jump_to_compound_input.returnPressed.connect(lambda: self.masslist_widget.jump_to_compound(self.jump_to_compound_input.text(),self))
-        self.multiple_check_OK_Button.pressed.connect(self.multiple_check_pressed)
-        self.multiple_check.returnPressed.connect(self.multiple_check_pressed)
+        self.masslist_frame.jump_to_mass_input.returnPressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_mass_to_selected_masses(self.masslist_frame.jump_to_mass_input.text(),self))
+        self.masslist_frame.jump_to_compound_button.pressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_compound(self.masslist_frame.jump_to_compound_input.text(),self))
+        self.masslist_frame.jump_to_compound_input.returnPressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_compound(self.masslist_frame.jump_to_compound_input.text(),self))
+        self.masslist_frame.multiple_check_OK_Button.pressed.connect(self.multiple_check_pressed)
+        self.masslist_frame.multiple_check.returnPressed.connect(self.multiple_check_pressed)
 
         # #sorting widgets - give sorting function define sorting object,
-        self.sort_max.sortingbutton.pressed.connect(lambda: self.sort_max.sort_qlist(self.masslist_widget,self.tr.load_Traces("all")))
-        self.sort_rel.sortingbutton.pressed.connect(lambda : self.sort_rel.sort_qlist(self.masslist_widget,self.tr.load_Traces("all")))
-        self.sort_mass.sortingbutton.pressed.connect(lambda: self.sort_mass.sort_qlist(self.masslist_widget,self.tr.MasslistMasses) )
+        self.masslist_frame.sort_max.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_max.sort_qlist(self.masslist_frame.masslist_widget,self.tr.load_Traces("all")))
+        self.masslist_frame.sort_rel.sortingbutton.pressed.connect(lambda : self.masslist_frame.sort_rel.sort_qlist(self.masslist_frame.masslist_widget,self.tr.load_Traces("all")))
+        self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses) )
         #menubar stuff
 
         self.plotsettings_window = po.PlotSettingsWindow(self)
@@ -341,18 +218,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb.autoRange()
         self.vb.setMenuEnabled(False)
         self.vb.setAspectLocked(lock=False)
-        self.vb.setAutoVisible(y=1.0)
-        self.vb.setMouseEnabled(x=True, y=False)   # restric movement
         self.vb.enableAutoRange(axis='y', enable=True)
         # when xrange changed make the following
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
         self.update_plots()
 
-        self.graph_peak_Widget.setBackground(self.plot_settings["background_color"])
-        self.graph_peak_Widget.showGrid(y = True)
-        self.graph_peak_Widget.getAxis('bottom').setPen(pg.mkPen(color='k'))
-        self.graph_peak_Widget.getAxis('left').setPen(pg.mkPen(color='k'))
+        self.plot_peak_frame.graph_peak_Widget.setBackground(self.plot_settings["background_color"])
+        self.plot_peak_frame.graph_peak_Widget.showGrid(y = True)
+        self.plot_peak_frame.graph_peak_Widget.getAxis('bottom').setPen(pg.mkPen(color='k'))
+        self.plot_peak_frame.graph_peak_Widget.getAxis('left').setPen(pg.mkPen(color='k'))
         # font = self.plot_settings["font"]
         # self.graph_peak_Widget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
         # self.graph_peak_Widget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
@@ -362,27 +237,28 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.graph_peak_Widget.getAxis('left').setTextPen('k')
         # self.graph_peak_Widget.getAxis('left').setLabel(text="Signal", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
         # self.graph_peak_Widget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
-        self.graph_peak_Widget.setLogMode(y=True)
-        self.graph_peak_Widget.addLegend()
+        self.plot_peak_frame.graph_peak_Widget.setLogMode(y=True)
+        self.plot_peak_frame.graph_peak_Widget.addLegend()
 
-        self.plot_added = True
         # set the restrictions on the movement
-        self.vb_peak = self.graph_peak_Widget.getViewBox()
+        self.vb_peak = self.plot_peak_frame.graph_peak_Widget.getViewBox()
         self.vb_peak.setXRange(0,1)
         self.vb_peak.setMenuEnabled(False)
         self.vb_peak.setAspectLocked(lock=False)
         self.vb_peak.setAutoVisible(y=1.0)
         self.vb_peak.setMouseEnabled(x=True, y=False)   # restric movement
         self.vb_peak.enableAutoRange(axis='y', enable=True)
-        pyqto.replot_spectra(self, self.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
+        pyqto.replot_spectra(self, self.plot_peak_frame.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
 
         # when xrange changed make the following
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         # self.vb_peak.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
 
     def export_currently_selected_masses_to_csv(self):
-        print(f"Export {self.masses_selected_widget.selectedmasses}")
-        if self.masses_selected_widget.selectedmasses.shape[0] > 0:
+        selected_masses = self.masses_selected_frame.masses_selected_widget
+        selected_compositions = self.masses_selected_widget.selectedcompositions
+        print(f"Export {selected_masses}")
+        if selected_masses.shape[0] > 0:
             defaultsavefilename = os.path.join(self.filename,"Selected_traces.csv")
             options = QtWidgets.QFileDialog.Options()
             savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
@@ -390,10 +266,10 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                 options=options)
             if savefilename:
                 print(self.tr.Traces)
-                print(f"{self.masses_selected_widget.selectedcompositions}")
-                compnames = to.get_names_out_of_element_numbers(self.masses_selected_widget.selectedcompositions)
+                print(f"{selected_compositions}")
+                compnames = mo.get_names_out_of_element_numbers(selected_compositions)
                 print(compnames)
-                header = [f"{round(mass,6)}-{compname}" for mass,compname in zip(self.masses_selected_widget.selectedmasses,compnames)]
+                header = [f"{round(mass,6)}-{compname}" for mass,compname in zip(selected_masses,compnames)]
                 print(header)
                 export_df = pd.DataFrame(self.tr.Traces.T,columns=header,index=self.tr.Times)
                 print(export_df)
@@ -401,22 +277,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def multiple_check_pressed(self):
-        print(f"Input: {self.multiple_check.text()}")
-        borders = self.multiple_check.text().split("-")
-        if len(borders) == 1:
-            index = int(borders[0]) -1
-            self.masses_selected_widget.add_index_to_selected_masses(index, self)
-        if len(borders) == 2:
-            lower, upper = borders
-            lower,upper = int(lower),int(upper)
+        print(f"Input: {self.masslist_frame.multiple_check.text()}")
+        input = self.masslist_frame.multiple_check.text()
+        first,sep,second = input.rpartition('-')
+        print(first,second)
+        if first:
+            lower, upper = first,second
+            lower,upper = int(lower)-1,int(upper)
             if lower < 0:
                 lower = 0
-            else:
-                lower = lower -1
-            upper = upper -1
+            upper = upper
             if lower < upper:
                 print(lower, upper)
-                self.masses_selected_widget.add_index_to_selected_masses(lower,self,upper_index=upper)
+                self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses(lower,self,upper_index=upper)
+        else:
+            # if first is empty -> only one input
+            index = int(second) - 1
+            if index >= 0:
+                print(second)
+                self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses([index], self)
+
     def remove_all_plot_items(self):
         """remove all plot_items in the graphWidget
 
@@ -457,32 +337,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_plots(self):
         # set the restrictions on the movement
         self.remove_all_plot_items()
-        print(self.tr.Traces.shape, self.masses_selected_widget.selectedcompositions)
-        for (trace,mass,composition,color) in zip(self.tr.Traces,self.masses_selected_widget.selectedmasses,self.masses_selected_widget.selectedcompositions,self.masses_selected_widget.defaultcolorcycle):
-            print(mass,self.masses_selected_widget.current_clicked_mass)
-            if mass==self.masses_selected_widget.current_clicked_mass:
+        traces = self.tr.Traces
+        masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
+        compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
+        colors = self.masses_selected_frame.masses_selected_widget.defaultcolorcycle
+        currentmass = self.masses_selected_frame.masses_selected_widget.current_clicked_mass
+        for (trace,mass,composition,color) in zip(traces,masses,compositions,colors):
+            if mass==currentmass:
                 width = 3
             else:width = 1
             self.tracesplot = self.graphWidget.plot(self.tr.Times, trace,
                                                   pen=pg.mkPen(color, width=width),
-                                                  name=f"m/z {round(mass,6)} - {to.get_names_out_of_element_numbers(composition)}")
-            self.tracesplot.scene().sigMouseClicked.connect(self.mouse_double_click_on_empty)
+                                                  name=f"m/z {round(mass,6)} - {mo.get_names_out_of_element_numbers(composition)}")
+            # self.tracesplot.scene().sigMouseClicked.connect(self.mouse_double_click_on_empty)
         self.vb.autoRange()
 
 
-        # if type(event) is str:
-        #     mass = float(event)
-        # elif type(event) is float:
-        #     mass = event
-        # else:
-        #     mass, compoundstr = event.text().rsplit('  ', 1)
-        #     mass = float(mass)
-        # print("jump to mass: ", mass)
-        # xlims, ylims = self.vb.viewRange()
-        # xrange = xlims[1] - xlims[0]
-        # target_mass = mass
-        # newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
-        # self.vb.setXRange(*newxlims, padding = 0)
 
     def mouse_double_click_on_empty(self,ev):
         if ev.double():

@@ -693,11 +693,17 @@ def get_names_out_of_element_numbers(compound_array):
     compoundname_list = []
     compound_array_copy = compound_array.copy()
     for compound in compound_array_copy:
+        if compound_array.shape[0] < 9:
+            # if we still donot have iodine etc teak the reduce neme list
+            names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S"]
+            order_of_letters = [0, 1, 2, 7, 3, 4, 5, 6]
+        else:
+            order_of_letters = Mass_iso_sugglist.order_of_letters
+            names_elements = Mass_iso_sugglist.names_elements
         if len(compound_array.shape) == 1:
             compound = compound_array_copy
         if np.any(compound):
-            order_of_letters = Mass_iso_sugglist.order_of_letters
-            names_elements = Mass_iso_sugglist.names_elements
+
             compoundletters = ""
             including_NH4 = False
             if compound[2] >= 3 and compound[4] >= 1:
