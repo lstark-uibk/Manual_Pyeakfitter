@@ -6,10 +6,11 @@ from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
 import pyqtgraph as pg
+import  workflows_pyeakfitter.pyqtgraph_objects as pyqto
 import re
 class Traces():
-    MasslistElements = ["C", "C13", "H", "H+", "N", "O", "O18", "S"]
-    Order_of_letters = [0, 1, 2, 7, 4, 5, 6, 3]
+    MasslistElements =["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S","S(34)", "I", "Si"] #iodine, silizium
+    Order_of_letters = [0, 1, 2, 9, 4, 5, 6, 7 ,8 , 10 ,3]
     MasslistElementsMasses = np.array([12,
                                 13.00335,
                                 1.00783,
@@ -18,6 +19,9 @@ class Traces():
                                 15.99492,
                                 17.99916,
                                 31.97207,
+                                33.967867, # https://en.wikipedia.org/wiki/Isotopes_of_sulfur
+                                126.90448,
+                                27.9763
                                ])
     def __init__(self,Filename,useAveragesOnly=True,startTime = 0, endTime = 0,Raw = True):
         self.Times = []
@@ -405,6 +409,7 @@ class QlistWidget_Selected_Masses(QListWidget):
             parent.update_plots()
         elif button == 2:
             print(f"Right click update peak plot for mass {new_mass}")
+            pyqto.redraw_localfit(parent,parent.spectrumplot,(new_mass-1,new_mass+1))
 
 
     def add_index_to_selected_masses(self,lower_index,parent,upper_index = 0):
@@ -583,14 +588,15 @@ def get_names_out_of_element_numbers(compound_array):
             compoundletters = ""
             for index, order in enumerate(order_of_letters):
                 # before the last letter (H+) add a " "
-                if index == len(order_of_letters)-1:
-                    compoundletters += " "
-                if compound[order] == 0:
-                    pass
-                if compound[order] == 1:
-                    compoundletters += names_elements[order]
-                if compound[order] > 1:
-                    compoundletters += names_elements[order] + str(round(compound[order]))
+                if order < compound.shape[0]:
+                    if index == len(order_of_letters)-1:
+                        compoundletters += " "
+                    if compound[order] == 0:
+                        pass
+                    if compound[order] == 1:
+                        compoundletters += names_elements[order]
+                    if compound[order] > 1:
+                        compoundletters += names_elements[order] + str(round(compound[order]))
             compoundname_list.append(compoundletters)
             if len(compound_array.shape) == 1:
                 return compoundletters

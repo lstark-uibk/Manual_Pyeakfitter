@@ -302,9 +302,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
             def to_worker():
-                pyqtgraph_objects.redraw_localfit(self,xlims)
+                pyqtgraph_objects.redraw_localfit(self,self.graphWidget,xlims)
             worker = Worker(to_worker)
             self.threadpool.start(worker)
+
     def importmasslist_fn(self):
         print("Import")
         # get filepath of masslist to import
@@ -443,7 +444,7 @@ class MainWindow(QtWidgets.QMainWindow):
             threshold_closeness = np.diff(xlims) * 0.01 # should be 0.01 percent of the current view near
             nearest_mass_or_suggestion = self.ml.check_whether_suggmass_nearby(xpos,self.ml.suggestions,threshold_closeness)
             self.ml.add_mass_to_masslist(self, nearest_mass_or_suggestion)
-            pyqtgraph_objects.redraw_localfit(self,xlims)
+            pyqtgraph_objects.redraw_localfit(self,self.graphWidget,xlims)
 
 
     def keyPressEvent(self, event):
@@ -458,7 +459,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 #if we hover something delete this
                 self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
                 xlims, ylims = self.vb.viewRange()
-                pyqtgraph_objects.redraw_localfit(self, xlims)
+                pyqtgraph_objects.redraw_localfit(self, self.graphWidget,xlims)
             print(self.masslist_widget.currentItem())
             if self.masslist_widget.currentItem():
                 # otherwise look in qlist whether there is a item currently selected

@@ -66,7 +66,7 @@ def redraw_vlines(parent, xlims):
 )
 
 
-def redraw_localfit(parent,xlims):
+def redraw_localfit(parent,graph_widget,xlims):
     """calculate a new local fit with given x-limits and current isotopes and masslists and replot it on  Mainwindow.graphWidget
 
     Parameters:
@@ -314,7 +314,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 threshold_closeness = np.diff(self.xlims) * 0.01  # should be 0.01 percent of the current view near
                 nearest_mass_or_suggestion = self.parent.ml.check_whether_suggmass_nearby(self.value(), self.parent.ml.suggestions, threshold_closeness)
                 self.parent.ml.add_mass_to_masslist(self.parent, nearest_mass_or_suggestion)
-                redraw_localfit(self.parent,self.xlims)
+                redraw_localfit(self.parent,self.parent.graphWidget,self.xlims)
             else:
                 print("is already in ml")
 
@@ -322,7 +322,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             print("try to delete mass", self.value())
             if self.value() in self.parent.ml.masslist.masses :
                 self.parent.ml.delete_mass_from_masslist(self.parent, self.value())
-                redraw_localfit(self.parent,self.xlims)
+                redraw_localfit(self.parent,self.parent.graphWidget,self.xlims)
             else:
                 print("This mass is not already in Masslist to delete")
                 # self.update()
@@ -355,4 +355,4 @@ class InfiniteLine_Mass(pg.InfiniteLine):
                 threshold_closeness = np.diff(self.xlims) * 0.01  # should be 0.01 percent of the current view near
                 nearest_mass_or_suggestion = self.parent.ml.check_whether_suggmass_nearby(self.value(), self.parent.ml.suggestions, threshold_closeness)
                 self.parent.ml.add_mass_to_masslist(self.parent, nearest_mass_or_suggestion)
-                redraw_localfit(self.parent, self.xlims)
+                redraw_localfit(self.parent, self.parent.graphWidget,self.xlims)

@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 import sys
 import workflows_ptg.trace_objects as to
 import workflows_ptg.pyqt_objects_ptg as po
+import workflows_pyeakfitter.masslist_objects as mo
 from PyQt5.QtGui import QRegExpValidator
 
 
@@ -258,7 +259,8 @@ class MainWindow(QtWidgets.QMainWindow):
                               "raw": True
                               }
         self.tr = to.Traces(self.filename,useAveragesOnly=self.plot_settings["avg"], Raw=self.plot_settings["raw"])
-        self.sp = to.Spectrum(self.filename)
+        self.sp = mo.Spectrum(self.filename)
+        self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         self.tracesplot = []
         self.spectrumplot = []
 
