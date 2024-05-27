@@ -91,6 +91,8 @@ class Traces():
         :param raw:
         :return:
         """
+        order_input_masses = np.argsort(massesToLoad)
+        # massesToLoad = massesToLoad[order_input_masses]
         filename = self.filename
         if isinstance(massesToLoad, np.ndarray) or isinstance(massesToLoad,(float,int)):
             Massestoloadindices = np.where(np.any((np.isclose(self.MasslistMasses[:, None], massesToLoad , rtol=1e-5, atol=1e-8)),axis=1))[0]
@@ -140,7 +142,7 @@ class Traces():
                     else:
                         print("No high time resolution available, is this a average only file?")
                         ds = f["CorrAvgStickCps"]
-            Traces = ds[:, self.Timeindices][Massestoloadindices, :]
+            Traces = ds[:, self.Timeindices][Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
             return Traces
     def update_Traces(self, massesToLoad = "none"):
             self.Traces = self.load_Traces(massesToLoad)

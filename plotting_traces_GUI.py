@@ -58,11 +58,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_Ui_file_not_loaded()
 
         # to not load file everytime uncomment here
-        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
-        self.init_basket_objects()
-        self.init_UI_file_loaded()
-        self.init_plots()
-        self.file_loaded = True
+        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
+        # self.init_basket_objects()
+        # self.init_UI_file_loaded()
+        # self.init_plots()
+        # self.file_loaded = True
 
 
 
@@ -255,8 +255,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.vb_peak.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
 
     def export_currently_selected_masses_to_csv(self):
-        selected_masses = self.masses_selected_frame.masses_selected_widget
-        selected_compositions = self.masses_selected_widget.selectedcompositions
+        selected_masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
+        selected_compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
         print(f"Export {selected_masses}")
         if selected_masses.shape[0] > 0:
             defaultsavefilename = os.path.join(self.filename,"Selected_traces.csv")
@@ -268,10 +268,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(self.tr.Traces)
                 print(f"{selected_compositions}")
                 compnames = mo.get_names_out_of_element_numbers(selected_compositions)
+                order_of_masses = np.argsort(selected_masses)
                 print(compnames)
                 header = [f"{round(mass,6)}-{compname}" for mass,compname in zip(selected_masses,compnames)]
                 print(header)
                 export_df = pd.DataFrame(self.tr.Traces.T,columns=header,index=self.tr.Times)
+                export_df = export_df[export_df.columns[order_of_masses]]
                 print(export_df)
                 export_df.to_csv(savefilename)
 
@@ -337,12 +339,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_plots(self):
         # set the restrictions on the movement
         self.remove_all_plot_items()
-        traces = self.tr.Traces
+        traces = self.tr.Traces#[self.tr.MasslistMasses]
         masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
         compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
         colors = self.masses_selected_frame.masses_selected_widget.defaultcolorcycle
         currentmass = self.masses_selected_frame.masses_selected_widget.current_clicked_mass
         for (trace,mass,composition,color) in zip(traces,masses,compositions,colors):
+            print(mass,color)
             if mass==currentmass:
                 width = 3
             else:width = 1

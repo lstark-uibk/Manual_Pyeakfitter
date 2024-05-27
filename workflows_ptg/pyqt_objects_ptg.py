@@ -198,7 +198,7 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
             self.parent.tr.useaveragesonly = False
         else:
             self.parent.tr.useaveragesonly = True
-        self.parent.tr.update_Times_Traces(self.parent.masslist_widget.currentmasses)
+        self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
         self.parent.update_plots()
     def set_raw(self):
         checkbox = self.sender()
@@ -206,5 +206,5 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
             self.parent.tr.raw = True
         else:
             self.parent.tr.raw = False
-        self.parent.tr.update_Times_Traces(self.parent.masslist_widget.currentmasses)
+        self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
         self.parent.update_plots()
