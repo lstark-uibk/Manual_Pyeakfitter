@@ -8,7 +8,7 @@ import numpy as np
 import datetime as dt
 
 
-def _redraw_vline(parent, xlims, type = "mass"):
+def _redraw_vline(parent, graphwidget, xlims, not_changeable= False, type = "mass"):
     if type == "mass":
         massisosugg = parent.ml.masslist
         z = 1000
@@ -24,26 +24,26 @@ def _redraw_vline(parent, xlims, type = "mass"):
     if massisosugg.current_lines:
         for item in massisosugg.current_lines:
             if item.value() not in new_xlim_current_masses:
-                parent.graphWidget.removeItem(item)
+                graphwidget.removeItem(item)
                 massisosugg.current_lines.remove(item)
-
+    print(f"new_xlim_current_masses {new_xlim_current_masses}")
     # then add masses if they are not already in the view field
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:
             element_numbers = massisosugg.element_numbers[np.where(massisosugg.masses == mass)]
             compound_name = massisosugg.compound_names[massisosugg.masses == mass]
             label = compound_name[0]
-            print(mass, element_numbers, compound_name)
+            # print(mass, element_numbers, compound_name)
             #print in layer suggstions<isotopes<masslist
             if np.any(element_numbers):
-                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, Label= label)
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type= type, not_changeable=not_changeable, Label= label)
             else:
-                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type = "mass_without_comp", Label= "")
+                sugisomass_line = InfiniteLine_Mass(parent, Pos=mass, Type = "mass_without_comp",  not_changeable=not_changeable, Label= "")
             sugisomass_line.setZValue(z)
-            parent.graphWidget.addItem(sugisomass_line)
+            graphwidget.addItem(sugisomass_line)
             massisosugg.current_lines.append(sugisomass_line)
 
-def redraw_vlines(parent, xlims):
+def redraw_vlines(parent, graphwidget, xlims, not_changeable = False):
     """replot all vertical lines between given xlimson Mainwindow.graphWidget
      Suggestions, Isotopes and Masslist masses given in Mainwindow.ml
 
@@ -60,11 +60,9 @@ def redraw_vlines(parent, xlims):
     """
 
     if np.diff(xlims) < 0.7:
-        _redraw_vline(parent, xlims, type = "sugg")
-        _redraw_vline(parent, xlims, type = "mass")
-        _redraw_vline(parent, xlims, type = "iso",
-)
-
+        _redraw_vline(parent, graphwidget, xlims, type = "sugg", not_changeable = not_changeable)
+        _redraw_vline(parent, graphwidget, xlims, type = "mass", not_changeable = not_changeable)
+        _redraw_vline(parent, graphwidget, xlims, type = "iso", not_changeable = not_changeable)
 
 def redraw_localfit(parent,graph_widget,xlims):
     """calculate a new local fit with given x-limits and current isotopes and masslists and replot it on  Mainwindow.graphWidget
@@ -91,7 +89,7 @@ def redraw_localfit(parent,graph_widget,xlims):
         fitmassaxis, fitspectrum, coefficients, A = parent.sp.get_mass_coefficients(xlims,parent.ml)
         if not parent.sp.current_local_fit_init:
             print("Make a new local fit")
-            localfit = parent.graphWidget.plot(fitmassaxis, fitspectrum, pen=parent.plot_settings["local_fit"], name="Local Fit")
+            localfit = graph_widget.plot(fitmassaxis, fitspectrum, pen=parent.plot_settings["local_fit"], name="Local Fit")
             localfit.setLogMode(None, True)
             parent.sp.current_local_fit_masses = masses_influencing_localfit
             parent.sp.current_local_fit = localfit
@@ -107,7 +105,7 @@ def redraw_localfit(parent,graph_widget,xlims):
         # #     parent.sp.current_local_fit.append(subfit)
 
 
-def replot_spectra(parent, plotsetting_show):
+def replot_spectra(parent, graphwidget ,plotsetting_show,alterable_plot = True):
     """replot all spectrum lines with the setting given in Mainwindow.plotsettings
 
     Parameters:
@@ -122,33 +120,34 @@ def replot_spectra(parent, plotsetting_show):
     []
     """
     if parent.spectrumplot:
-        parent.graphWidget.removeItem(parent.spectrumplot)
+        graphwidget.removeItem(parent.spectrumplot)
     if plotsetting_show[0]:
         pen = {'color': 'red', 'width': 2}
-        parent.spectrumplot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum,
+        parent.spectrumplot = graphwidget.plot(parent.sp.massaxis, parent.sp.spectrum,
                                                   pen={'color': parent.plot_settings["average_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name="average spectrum")
         parent.spectrumplot.setLogMode(None, True)
         # make this when doubleclicking
         # is shifted
-        parent.spectrumplot.scene().sigMouseClicked.connect(parent.mouse_double_click_on_empty)
+        if alterable_plot:
+            parent.spectrumplot.scene().sigMouseClicked.connect(parent.mouse_double_click_on_empty)
 
     if parent.spectrum_max_plot:
-        parent.graphWidget.removeItem(parent.spectrum_max_plot)
+        graphwidget.removeItem(parent.spectrum_max_plot)
     if plotsetting_show[1]:
-        parent.spectrum_max_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_max,
+        parent.spectrum_max_plot = graphwidget.plot(parent.sp.massaxis, parent.sp.spectrum_max,
                                                        pen={'color': parent.plot_settings["max_spectrum_color"], 'width': 1}, name="max spectrum")
         parent.spectrum_max_plot.setLogMode(None, True)
     if parent.spectrum_min_plot:
-        parent.graphWidget.removeItem(parent.spectrum_min_plot)
+        graphwidget.removeItem(parent.spectrum_min_plot)
     if plotsetting_show[2]:
-        parent.spectrum_min_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.spectrum_min,
+        parent.spectrum_min_plot = graphwidget.plot(parent.sp.massaxis, parent.sp.spectrum_min,
                                                        pen={'color': parent.plot_settings["min_spectrum_color"], 'width': 1}, name="min spectrum")
         parent.spectrum_min_plot.setLogMode(None, True)
     if parent.subspec_plot:
-        parent.graphWidget.removeItem(parent.subspec_plot)
+        graphwidget.removeItem(parent.subspec_plot)
     if plotsetting_show[3]:
         current_subspectrum_time_str = parent.sp.current_subspectrum_time.astype(dt.datetime).strftime("%Y-%m-%d %H:%M")
-        parent.subspec_plot = parent.graphWidget.plot(parent.sp.massaxis, parent.sp.sum_specs[0, :],
+        parent.subspec_plot = graphwidget.plot(parent.sp.massaxis, parent.sp.sum_specs[0, :],
                                                   pen={'color': parent.plot_settings["sub_spectrum_color"], 'width': parent.plot_settings["spectra_width"]}, name=f"subspectrum at {current_subspectrum_time_str}")
         parent.subspec_plot.setLogMode(None, True)
 
@@ -224,7 +223,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
     deletable : True/False
     *args,**kwargs: arguments for pyqtgraph.InfiniteLin
     """
-    def __init__(self,Parent, Pos=0, Type = "none", Label="",**kwargs):
+    def __init__(self,Parent, Pos=0, Type = "none", not_changeable = False, Label="",**kwargs):
         """
 
         """
@@ -264,6 +263,11 @@ class InfiniteLine_Mass(pg.InfiniteLine):
             self.hover = True
             self.delatable = True
             self.movable = True
+
+        if not_changeable:
+            self.hover = False
+            self.delatable = False
+            self.movable = False
 
         pen = pg.mkPen(color, width=width)
 

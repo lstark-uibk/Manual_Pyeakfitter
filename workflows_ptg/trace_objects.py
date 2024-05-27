@@ -2,6 +2,8 @@ import numpy as np
 import math
 import h5py
 import datetime
+
+import pyqtgraph
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
@@ -349,7 +351,8 @@ class QlistWidget_Selected_Masses(QListWidget):
             (75, 0, 130),    # Indigo
             (0, 128, 0),     # Green
             (240, 128, 128)] # LightCoral
-        self.defaultcolorassignment = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9}
+        self.defaultcolorassignment = {}
+        self.highlight_this_mass_vline = []
 
 
     def mousePressEvent(self, event):
@@ -391,25 +394,42 @@ class QlistWidget_Selected_Masses(QListWidget):
                 parent.update_plots()
 
     def add_item_to_selected_masses(self,item,button,parent):
+        default_widow = 0.05
         row = int(parent.masslist_widget.row(item))
         print(f"index {row}")
-        new_mass = parent.masslist_widget.masses[row]
+        massclickedon = parent.masslist_widget.masses[row]
         new_composition = parent.masslist_widget.compositions[row, :]
-        print(f"new mass {new_mass}, {new_composition}")
+        print(f"new mass {massclickedon}, {new_composition}")
         if button == 1:#left click
-            new_mass = parent.masslist_widget.masses[row]
-            new_composition = parent.masslist_widget.compositions[row, :]
-            print(f"new mass {new_mass}, {new_composition}")
-            if new_mass not in self.selectedmasses:
-                self.selectedmasses = np.append(self.selectedmasses, new_mass)
+            if massclickedon not in self.selectedmasses:
+                self.selectedmasses = np.append(self.selectedmasses, massclickedon)
                 self.selectedcompositions = np.append(self.selectedcompositions, [new_composition], axis=0)
             print(self.selectedmasses, self.selectedcompositions)
             parent.tr.update_Traces(self.selectedmasses)
             self.redo_qlist()
             parent.update_plots()
-        elif button == 2:
-            print(f"Right click update peak plot for mass {new_mass}")
-            pyqto.redraw_localfit(parent,parent.spectrumplot,(new_mass-1,new_mass+1))
+        # elif button == 2:
+            # update the current peak
+            parent.graph_peak_Widget.removeItem(self.highlight_this_mass_vline)
+            self.highlight_this_mass_vline = []
+            print(f"Right click update peak plot for mass {massclickedon}")
+            color_this_mass = self.defaultcolorcycle[np.where(self.selectedmasses == massclickedon)[0][0]]
+            print(color_this_mass)
+            parent.peakmasscolor.set_color(color_this_mass)
+            parent.peakmasslabel.setText(str(round(massclickedon,6)))
+            xlims = (massclickedon-default_widow,massclickedon+default_widow)
+            # pyqto.replot_spectra(parent,parent.graph_peak_Widget,parent.plot_settings["show_plots"],alterable_plot=False)
+            parent.vb_peak.setXRange(*xlims)
+            pyqto.redraw_vlines(parent,parent.graph_peak_Widget,xlims,not_changeable=True)
+            if new_composition.sum() > 0:
+                # if we have any entries in the composition
+                vertlinecol = parent.plot_settings["vert_lines_color_masslist"]
+            else:
+                vertlinecol = parent.plot_settings["vert_lines_color_masslist_without_composition"]
+            self.highlight_this_mass_vline = pyqtgraph.InfiniteLine(pos=massclickedon, pen = {"color": vertlinecol, "width": 4},angle = 90)
+            self.highlight_this_mass_vline.setZValue(2000)
+            parent.graph_peak_Widget.addItem(self.highlight_this_mass_vline)
+            pyqto.redraw_localfit(parent,parent.graph_peak_Widget,xlims)
 
 
     def add_index_to_selected_masses(self,lower_index,parent,upper_index = 0):

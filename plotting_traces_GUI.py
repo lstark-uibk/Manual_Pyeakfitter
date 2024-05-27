@@ -8,6 +8,7 @@ import sys
 import workflows_ptg.trace_objects as to
 import workflows_ptg.pyqt_objects_ptg as po
 import workflows_pyeakfitter.masslist_objects as mo
+import workflows_pyeakfitter.pyqtgraph_objects as pyqto
 from PyQt5.QtGui import QRegExpValidator
 
 
@@ -106,10 +107,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masses_selected_layout_header = QtWidgets.QHBoxLayout()
         self.masses_selected_layout_header.addWidget(QtWidgets.QLabel("Selected Masses"))
         self.masses_selected_deselectall_button = QtWidgets.QPushButton("Deselect all")
+        self.masses_selected_export_button = QtWidgets.QPushButton("Export as .csv")
         self.masses_selected_layout_header.addWidget(self.masses_selected_deselectall_button)
+        self.masses_selected_layout_header.addWidget(self.masses_selected_export_button)
         #show peak info
         self.peak_info_layout_header = QtWidgets.QHBoxLayout()
         self.peak_info_layout_header.addWidget(QtWidgets.QLabel("Peak of selected Mass"))
+        self.peakmasslabel = QtWidgets.QLabel("")
+        self.peak_info_layout_header.addWidget(self.peakmasslabel)
+        self.peakmasscolor = po.ColorField((0,0,0))
+        self.peak_info_layout_header.addWidget(self.peakmasscolor)
         # self.peak_info_deselectall_button = QtWidgets.QPushButton("Deselect")
         # self.peak_info_layout_header.addWidget(self.peak_info_deselectall_button)
         self.plot_peak_layout = QtWidgets.QVBoxLayout()
@@ -249,20 +256,25 @@ class MainWindow(QtWidgets.QMainWindow):
                               "average_spectrum_color" : (252, 49, 3),
                               "max_spectrum_color": (122, 72, 6, 80),
                               "min_spectrum_color": (11, 125, 191, 80),
-                              "sub_spectrum_color": (103, 42, 201, 80),
+                              "local_fit": (0, 0, 210),
                               "color_cycle": ['r', 'g', 'b', 'c', 'm', 'y'],
                               "current_color": 0,
                               "current_color_fixed": 0,
                               "background_color": "w",
+                              "spectra_width": 1,
                               "show_plots": [True,False,False,False], #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
                               "avg": False,
-                              "raw": True
+                              "raw": True,
+                              "font": QtGui.QFont('Calibri', 11),
                               }
         self.tr = to.Traces(self.filename,useAveragesOnly=self.plot_settings["avg"], Raw=self.plot_settings["raw"])
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         self.tracesplot = []
         self.spectrumplot = []
+        self.spectrum_max_plot = []
+        self.spectrum_min_plot = []
+        self.subspec_plot = []
 
 
 
@@ -275,6 +287,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(lambda item,button: self.masses_selected_widget.add_item_to_selected_masses(item,button,self))
         self.masses_selected_widget.itemClicked.connect(lambda item,button: self.masses_selected_widget.clicked_on_item(item,button,self))
         self.masses_selected_deselectall_button.clicked.connect(lambda: self.masses_selected_widget.deselect_all(self))
+        self.masses_selected_export_button.clicked.connect(self.export_currently_selected_masses_to_csv)
         # self.masslist_widget.itemDoubleClicked.connect(lambda item: self.masslist_widget.handle_double_click(item, parent=self))
 
         #jump to mass widget
@@ -295,9 +308,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-
-
     def init_plots(self):
+        # first big plot
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
         self.graphWidget.setBackground(self.plot_settings["background_color"])
@@ -320,6 +332,57 @@ class MainWindow(QtWidgets.QMainWindow):
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
         self.update_plots()
+
+        self.graph_peak_Widget.setBackground(self.plot_settings["background_color"])
+        self.graph_peak_Widget.showGrid(y = True)
+        self.graph_peak_Widget.getAxis('bottom').setPen(pg.mkPen(color='k'))
+        self.graph_peak_Widget.getAxis('left').setPen(pg.mkPen(color='k'))
+        # font = self.plot_settings["font"]
+        # self.graph_peak_Widget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        # self.graph_peak_Widget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        # self.graph_peak_Widget.getAxis('bottom').setPen('k')
+        # self.graph_peak_Widget.getAxis('left').setPen('k')
+        # self.graph_peak_Widget.getAxis('bottom').setTextPen('k')
+        # self.graph_peak_Widget.getAxis('left').setTextPen('k')
+        # self.graph_peak_Widget.getAxis('left').setLabel(text="Signal", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
+        # self.graph_peak_Widget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
+        self.graph_peak_Widget.setLogMode(y=True)
+        self.graph_peak_Widget.addLegend()
+
+        self.plot_added = True
+        # set the restrictions on the movement
+        self.vb_peak = self.graph_peak_Widget.getViewBox()
+        self.vb_peak.setXRange(0,1)
+        self.vb_peak.setMenuEnabled(False)
+        self.vb_peak.setAspectLocked(lock=False)
+        self.vb_peak.setAutoVisible(y=1.0)
+        self.vb_peak.setMouseEnabled(x=True, y=False)   # restric movement
+        self.vb_peak.enableAutoRange(axis='y', enable=True)
+        pyqto.replot_spectra(self, self.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
+
+        # when xrange changed make the following
+        # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
+        # self.vb_peak.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
+
+    def export_currently_selected_masses_to_csv(self):
+        print(f"Export {self.masses_selected_widget.selectedmasses}")
+        if self.masses_selected_widget.selectedmasses.shape[0] > 0:
+            defaultsavefilename = os.path.join(self.filename,"Selected_traces.csv")
+            options = QtWidgets.QFileDialog.Options()
+            savefilename, _ = QtWidgets.QFileDialog.getSaveFileName(self,
+                                                                "Save File", defaultsavefilename, "csv_files(*.csv)",
+                                                                options=options)
+            if savefilename:
+                print(self.tr.Traces)
+                print(f"{self.masses_selected_widget.selectedcompositions}")
+                compnames = to.get_names_out_of_element_numbers(self.masses_selected_widget.selectedcompositions)
+                print(compnames)
+                header = [f"{round(mass,6)}-{compname}" for mass,compname in zip(self.masses_selected_widget.selectedmasses,compnames)]
+                print(header)
+                export_df = pd.DataFrame(self.tr.Traces.T,columns=header,index=self.tr.Times)
+                print(export_df)
+                export_df.to_csv(savefilename)
+
 
     def multiple_check_pressed(self):
         print(self.multiple_check.text().split("-"))

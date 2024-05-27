@@ -109,7 +109,7 @@ def open_file(parent):
             open_file(parent)
         parent.file_loaded = True
         parent.init_UI_file_loaded()
-        parent.init_plots()
+        parent.init_plots(parent.graphWidget)
 
 
 class QHSeparationLine(QtWidgets.QFrame):
@@ -352,7 +352,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         pyqtgraph_objects.remove_all_vlines(self.parent)
         self.parent.ml.reinit_old_sugg_ranges()
         xlims, ylims = self.parent.vb.viewRange()
-        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
+        pyqtgraph_objects.redraw_vlines(self.parent,self.parent.graphWidget,xlims)
         print("Go back to default Suggestions")
         print(self.parent.ml.mass_suggestions_numbers)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
@@ -402,7 +402,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         pyqtgraph_objects.remove_all_vlines(self.parent)
         self.parent.ml.reinit_suggestions()
         xlims, ylims = self.parent.vb.viewRange()
-        pyqtgraph_objects.redraw_vlines(self.parent, xlims)
+        pyqtgraph_objects.redraw_vlines(self.parent, self.parent.graphWidget, xlims)
         print("change the input ranges to")
         print(self.parent.ml.mass_suggestions_numbers)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
@@ -472,7 +472,7 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
                 for i in index:
                     self.parent.plot_settings["show_plots"][i] = False
             # print(self.parent.plot_settings["show_plots"])
-            pyqtgraph_objects.replot_spectra(self.parent,self.parent.plot_settings["show_plots"])
+            pyqtgraph_objects.replot_spectra(self.parent,self.parent.graphWidget,self.parent.plot_settings["show_plots"])
 
 
 class LabeledSlider(QtWidgets.QWidget):

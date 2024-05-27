@@ -336,7 +336,7 @@ class Mass_iso_sugglist():
                 self.suggestions.element_numbers = self.suggestions.element_numbers[sortperm]
                 self.suggestions.compound_names = self.suggestions.compound_names[sortperm]
 
-                pyqtgraph_objects.redraw_vlines(parent, xlims)
+                pyqtgraph_objects.redraw_vlines(parent,parent.graphWidget, xlims)
                 highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, Pos=mass, Type = "highlight", Label = this_compound_name)
 
                 # parent.ml.suggestions.current_lines.append(highlight_line)
@@ -406,7 +406,7 @@ class Mass_iso_sugglist():
             self.suggestions.element_numbers = np.delete(self.suggestions.element_numbers, index_of_deletion, axis = 0)
             self.suggestions.compound_names = np.delete(self.suggestions.compound_names, index_of_deletion)
             xlims, ylims = parent.vb.viewRange()
-            pyqtgraph_objects.redraw_vlines(parent,xlims)
+            pyqtgraph_objects.redraw_vlines(parent,parent.graphWidget, xlims)
             self.redo_qlist(parent.masslist_widget)
 
     def delete_mass_from_masslist(self, parent, mass):
@@ -449,7 +449,7 @@ class Mass_iso_sugglist():
             self.isotopes.compound_names = np.delete(self.isotopes.compound_names, index_of_deletion,axis = 0)
             print("Redraw")
             xlims, ylims = parent.vb.viewRange()
-            pyqtgraph_objects.redraw_vlines(parent,xlims)
+            pyqtgraph_objects.redraw_vlines(parent,parent.graphWidget,xlims)
             self.redo_qlist(parent.masslist_widget)
         else:
             print("not found in masslist")

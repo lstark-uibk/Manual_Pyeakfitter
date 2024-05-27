@@ -1,4 +1,29 @@
 import PyQt5.QtWidgets as QtWidgets
+import PyQt5.QtGui as QtGui
+
+class ColorField(QtWidgets.QWidget):
+    def __init__(self, color, parent=None):
+        self.color = color
+        super().__init__(parent)
+        self.setAutoFillBackground(True)
+        self.set_color(color)
+
+    def set_color(self, color):
+        '''
+
+        Parameters
+        ----------
+        color: RGB Triple
+
+        Returns
+        -------
+
+        '''
+        self.color = color
+        palette = self.palette()
+        palette.setColor(self.backgroundRole(), QtGui.QColor(*color))
+        self.setPalette(palette)
+
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(PlotSettingsWindow, self).__init__(parent)

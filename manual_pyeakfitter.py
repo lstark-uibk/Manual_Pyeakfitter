@@ -247,26 +247,26 @@ class MainWindow(QtWidgets.QMainWindow):
         xlims, ylims = self.vb.viewRange()
         print(*np.c_[self.ml.suggestions.masses[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])],
                 mo.get_names_out_of_element_numbers(self.ml.suggestions.element_numbers[(xlims[0]< self.ml.suggestions.masses) * (self.ml.suggestions.masses< xlims[1])])], sep="\n")
-    def init_plots(self):
+    def init_plots(self,graphwidget):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
-        self.graphWidget.setBackground(self.plot_settings["background_color"])
-        self.graphWidget.showGrid(y = True)
-        self.graphWidget.getAxis('bottom').setPen(pg.mkPen(color='k'))
-        self.graphWidget.getAxis('left').setPen(pg.mkPen(color='k'))
+        graphwidget.setBackground(self.plot_settings["background_color"])
+        graphwidget.showGrid(y = True)
+        graphwidget.getAxis('bottom').setPen(pg.mkPen(color='k'))
+        graphwidget.getAxis('left').setPen(pg.mkPen(color='k'))
         font = self.plot_settings["font"]
-        self.graphWidget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
-        self.graphWidget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
-        self.graphWidget.getAxis('bottom').setPen('k')
-        self.graphWidget.getAxis('left').setPen('k')
-        self.graphWidget.getAxis('bottom').setTextPen('k')
-        self.graphWidget.getAxis('left').setTextPen('k')
-        self.graphWidget.getAxis('left').setLabel(text="Signal [cps]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
-        self.graphWidget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
-        self.graphWidget.setLogMode(y=True)
-        self.graphWidget.addLegend()
+        graphwidget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        graphwidget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
+        graphwidget.getAxis('bottom').setPen('k')
+        graphwidget.getAxis('left').setPen('k')
+        graphwidget.getAxis('bottom').setTextPen('k')
+        graphwidget.getAxis('left').setTextPen('k')
+        graphwidget.getAxis('left').setLabel(text="Signal [cps]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
+        graphwidget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
+        graphwidget.setLogMode(y=True)
+        graphwidget.addLegend()
         # make bg plots
-        pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])
+        pyqtgraph_objects.replot_spectra(self,graphwidget,self.plot_settings["show_plots"])
         self.plot_added = True
         # set the restrictions on the movement
         self.vb = self.spectrumplot.getViewBox()
@@ -298,7 +298,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.sp.current_local_fit.setData([0], [0])
                 self.sp.current_local_fit_masses = np.array([0])
         else:
-            pyqtgraph_objects.redraw_vlines(self, xlims)
+            pyqtgraph_objects.redraw_vlines(self, self.graphWidget, xlims)
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
             def to_worker():
