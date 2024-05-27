@@ -58,146 +58,155 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_Ui_file_not_loaded()
 
         # to not load file everytime uncomment here
-        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
-        self.init_basket_objects()
-        self.init_UI_file_loaded()
-        self.init_plots()
-        self.file_loaded = True
+        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
+        # self.init_basket_objects()
+        # self.init_UI_file_loaded()
+        # self.init_plots()
+        # self.file_loaded = True
 
 
 
     def init_Ui_file_not_loaded(self):
         self.centralwidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralwidget)
         # main layout setup
         self.overallverticallayout = QtWidgets.QVBoxLayout(self.centralwidget) # all with bar for files and interaction laout
         self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal)
-        self.horizontal_splitter.setSizes([300, 300])
-        self.horizontal_splitter.setMinimumSize(100, 100)
-        self.horizontal_splitter.setMaximumSize(400, 1000)
-        self.horizontalLayout = QtWidgets.QHBoxLayout() # overall horizontallayout with left column and plot
+        # self.horizontal_splitter.setSizes([1000, 2000])
+        # self.horizontal_splitter.setMinimumSize(100, 100)
+        # self.horizontal_splitter.setMaximumSize(400, 1000)
+        # self.horizontalLayout = QtWidgets.QHBoxLayout() # overall horizontallayout with left column and plot
 
-        self.left_column_layout = QtWidgets.QVBoxLayout() #layout on the left with the masslist, and other stuff
-        self.infoonmasses_layout = QtWidgets.QHBoxLayout()
-        self.masses_selected_layout = QtWidgets.QVBoxLayout()
-        self.peak_info_layout = QtWidgets.QVBoxLayout()
-        self.masslists_layout = QtWidgets.QVBoxLayout()
-        self.left_column_layout.addLayout(self.masslists_layout)
-        self.left_column_layout.addLayout(self.infoonmasses_layout)
-        self.left_column_layout.setStretch(0,2)
-        self.left_column_layout.setStretch(1,1)
-        self.plot_layout = QtWidgets.QVBoxLayout()  #laout on the right with the graph
-        self.jump_to_mass_layout = QtWidgets.QHBoxLayout()
-        self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
-        self.multiple_check_layout = QtWidgets.QHBoxLayout()
-        self.sorting_layout = QtWidgets.QHBoxLayout()
+        self.left_splitter_masslist_info = QtWidgets.QSplitter(Qt.Vertical)
+        self.horizontal_splitter.addWidget(self.left_splitter_masslist_info)
+        # self.horizontal_splitter.addWidget(QtWidgets.QLabel("ji"))
+        self.masslist_frame = po.Masslist_Frame()
+        self.left_splitter_masslist_info.addWidget(self.masslist_frame)
+        self.splitter_selected_peak = QtWidgets.QSplitter(Qt.Horizontal)
+        self.left_splitter_masslist_info.addWidget(self.splitter_selected_peak)
+
+        self.masses_selected_frame = po.SelectedMassesFrame()
+        self.splitter_selected_peak.addWidget(self.masses_selected_frame)
+
+        self.plot_peak_frame = po.Peak_Frame()
+        self.splitter_selected_peak.addWidget(self.plot_peak_frame)
+        # self.left_column_layout = QtWidgets.QVBoxLayout() #layout on the left with the masslist, and other stuff
+        # self.infoonmasses_layout = QtWidgets.QHBoxLayout()
+        # self.masses_selected_layout = QtWidgets.QVBoxLayout()
+        # self.peak_info_layout = QtWidgets.QVBoxLayout()
+        # self.masslists_layout = QtWidgets.QVBoxLayout()
+        # self.left_column_layout.addLayout(self.masslists_layout)
+        # self.left_column_layout.addLayout(self.infoonmasses_layout)
+        # self.left_column_layout.setStretch(0,2)
+        # self.left_column_layout.setStretch(1,1)
+        # self.plot_layout = QtWidgets.QVBoxLayout()  #laout on the right with the graph
+        # self.jump_to_mass_layout = QtWidgets.QHBoxLayout()
+        # self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
+        # self.multiple_check_layout = QtWidgets.QHBoxLayout()
+        # self.sorting_layout = QtWidgets.QHBoxLayout()
 
 
-        self.horizontalLayout.addLayout(self.left_column_layout)
-        self.horizontalLayout.addLayout(self.plot_layout)
-        self.horizontalLayout.setStretch(0, 2)
-        self.horizontalLayout.setStretch(1,3)
-        self.masslists_layout.addLayout(self.multiple_check_layout)
-        self.masslists_layout.addLayout(self.jump_to_mass_layout)
-        self.masslists_layout.addLayout(self.jump_to_compound_layout)
-        self.masslists_layout.addLayout(self.sorting_layout)
+        # self.horizontalLayout.addLayout(self.left_column_layout)
+        # self.horizontalLayout.addLayout(self.plot_layout)
+        # self.horizontalLayout.setStretch(0, 2)
+        # self.horizontalLayout.setStretch(1,3)
+        # self.masslists_layout.addLayout(self.multiple_check_layout)
+        # self.masslists_layout.addLayout(self.jump_to_mass_layout)
+        # self.masslists_layout.addLayout(self.jump_to_compound_layout)
+        # self.masslists_layout.addLayout(self.sorting_layout)
 
         # plot widget for the plot_layout
         self.graphWidget = pg.PlotWidget()
         axis = pg.DateAxisItem()
         self.graphWidget.setAxisItems({'bottom': axis})
-        self.plot_layout.addWidget(self.graphWidget)
-
-        #list of selected masses
-        self.masses_selected_widget = to.QlistWidget_Selected_Masses(self)
-        self.masses_selected_layout_header = QtWidgets.QHBoxLayout()
-        self.masses_selected_layout_header.addWidget(QtWidgets.QLabel("Selected Masses"))
-        self.masses_selected_deselectall_button = QtWidgets.QPushButton("Deselect all")
-        self.masses_selected_export_button = QtWidgets.QPushButton("Export as .csv")
-        self.masses_selected_layout_header.addWidget(self.masses_selected_deselectall_button)
-        self.masses_selected_layout_header.addWidget(self.masses_selected_export_button)
-        #show peak info
-        self.peak_info_layout_header = QtWidgets.QHBoxLayout()
-        self.peak_info_layout_header.addWidget(QtWidgets.QLabel("Peak of selected Mass"))
-        self.peakmasslabel = QtWidgets.QLabel("")
-        self.peak_info_layout_header.addWidget(self.peakmasslabel)
-        self.peakmasscolor = po.ColorField((0,0,0))
-        self.peak_info_layout_header.addWidget(self.peakmasscolor)
-        # self.peak_info_deselectall_button = QtWidgets.QPushButton("Deselect")
-        # self.peak_info_layout_header.addWidget(self.peak_info_deselectall_button)
-        self.plot_peak_layout = QtWidgets.QVBoxLayout()
-        self.graph_peak_Widget = pg.PlotWidget()
-        axis = pg.DateAxisItem()
-        self.graph_peak_Widget.setAxisItems({'bottom': axis})
-        self.plot_peak_layout.addWidget(self.graph_peak_Widget)
+        self.horizontal_splitter.addWidget(self.graphWidget)
 
 
-        # list of masses
-        self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
-        regex = QRegExp(r'^-?\d+(-\d+)?$')
-        # Create a validator based on the regular expression
-        self.multiple_check = QtWidgets.QLineEdit()
-        validator = QRegExpValidator(regex, self.multiple_check)
-        self.multiple_check.setValidator(validator)
-        multiple_check_label = QtWidgets.QLabel("Select traces (e.g. 1-10)")
-        self.multiple_check_OK_Button = QtWidgets.QPushButton("OK")
-        self.multiple_check_layout.addWidget(multiple_check_label)
-        self.multiple_check_layout.addWidget(self.multiple_check)
-        # self.multiple_check_layout.addWidget(self.multiple_check_OK_Button)
-
-
-
-
-
-        self.label_jump_mass = QtWidgets.QLabel("Select masses (e.g. 69.420-70): ")
-        self.jump_to_mass_input = QtWidgets.QLineEdit()
-        regexmass = QRegExp(r'^\d+(\.\d*)?(-(\d+)(\.\d*)?)?$')
-        validator = QRegExpValidator(regexmass, self.jump_to_mass_input)
-        self.jump_to_mass_input.setValidator(validator)
-        self.jump_to_mass_layout.addWidget(self.label_jump_mass)
-        self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
-
-        self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+): ")
-        self.jump_to_compound_input = QtWidgets.QLineEdit()
-        regexcomp = QRegExp(r'^(([a-zA-Z]+)(\d+)?)+\+$')
-        validatorcomp = QRegExpValidator(regexcomp, self.jump_to_compound_input)
-        self.jump_to_compound_input.setValidator(validatorcomp)
-        self.jump_to_compound_button = QtWidgets.QPushButton("OK")
-        self.jump_to_mass_layout.addWidget(self.label_jump_mass)
-        self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
-        self.jump_to_compound_layout.addWidget(self.label_jump_compound)
-        self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
-
-        def sort_on_mass(masses):
-            sorted = np.argsort(masses)
-            return sorted
-        self.sort_mass = to.Sorting(self,self.sorting_layout, sort_on_mass, "Sort masses")
-
-        def sort_biggest_relative_difference(traces):
-            if traces.ndim == 3:
-                traces = traces[0]
-            rel_diffs = np.empty(traces.shape[0])
-            for i, trace in enumerate(traces):
-                if np.mean(trace) > 0.7 * np.std(trace):
-                    #preselect for noise
-                    biggestdiff = np.ptp(trace)
-                    mean = np.mean(trace)
-                    rel_diff = biggestdiff / mean
-                    rel_diffs[i] = rel_diff
-                else: rel_diffs[i] = 0
-            sorted = np.argsort(rel_diffs)[::-1]
-            return sorted
-        self.sort_rel = to.Sorting(self, self.sorting_layout, sort_biggest_relative_difference, "Sorting on highest rel diff")
-
-        def sorting_max(traces):
-            if traces.ndim == 3:
-                traces = traces[0]
-            means = np.mean(traces, axis=1)
-            sorted = np.argsort(means)
-            sorted = sorted[::-1]
-            return sorted
-        self.sort_max = to.Sorting(self,self.sorting_layout,sorting_max, "Sorting on highest trace")
-
+        # #show peak info
+        # self.peak_info_layout_header = QtWidgets.QHBoxLayout()
+        # self.peak_info_layout_header.addWidget(QtWidgets.QLabel("Peak of selected Mass"))
+        # self.peakmasslabel = QtWidgets.QLabel("")
+        # self.peak_info_layout_header.addWidget(self.peakmasslabel)
+        # self.peakmasscolor = po.ColorField((0,0,0))
+        # self.peak_info_layout_header.addWidget(self.peakmasscolor)
+        # # self.peak_info_deselectall_button = QtWidgets.QPushButton("Deselect")
+        # # self.peak_info_layout_header.addWidget(self.peak_info_deselectall_button)
+        # self.plot_peak_layout = QtWidgets.QVBoxLayout()
+        # self.graph_peak_Widget = pg.PlotWidget()
+        # axis = pg.DateAxisItem()
+        # self.graph_peak_Widget.setAxisItems({'bottom': axis})
+        # self.plot_peak_layout.addWidget(self.graph_peak_Widget)
+        #
+        # self.horizontal_splitter.addWidget(self.left_splitter_masslist_info)
+        # self.left_splitter_masslist_info.addWidget(self.graphWidget)
+        #
+        # # list of masses
+        # self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
+        # regex = QRegExp(r'^-?\d+(-\d+)?$')
+        # # Create a validator based on the regular expression
+        # self.multiple_check = QtWidgets.QLineEdit()
+        # validator = QRegExpValidator(regex, self.multiple_check)
+        # self.multiple_check.setValidator(validator)
+        # multiple_check_label = QtWidgets.QLabel("Select traces (e.g. 1-10)")
+        # self.multiple_check_OK_Button = QtWidgets.QPushButton("OK")
+        # self.multiple_check_layout.addWidget(multiple_check_label)
+        # self.multiple_check_layout.addWidget(self.multiple_check)
+        # # self.multiple_check_layout.addWidget(self.multiple_check_OK_Button)
+        #
+        #
+        #
+        #
+        #
+        # self.label_jump_mass = QtWidgets.QLabel("Select masses (e.g. 69.420-70): ")
+        # self.jump_to_mass_input = QtWidgets.QLineEdit()
+        # regexmass = QRegExp(r'^\d+(\.\d*)?(-(\d+)(\.\d*)?)?$')
+        # validator = QRegExpValidator(regexmass, self.jump_to_mass_input)
+        # self.jump_to_mass_input.setValidator(validator)
+        # self.jump_to_mass_layout.addWidget(self.label_jump_mass)
+        # self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
+        #
+        # self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+): ")
+        # self.jump_to_compound_input = QtWidgets.QLineEdit()
+        # regexcomp = QRegExp(r'^(([a-zA-Z]+)(\d+)?)+\+$')
+        # validatorcomp = QRegExpValidator(regexcomp, self.jump_to_compound_input)
+        # self.jump_to_compound_input.setValidator(validatorcomp)
+        # self.jump_to_compound_button = QtWidgets.QPushButton("OK")
+        # self.jump_to_mass_layout.addWidget(self.label_jump_mass)
+        # self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
+        # self.jump_to_compound_layout.addWidget(self.label_jump_compound)
+        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
+        # # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
+        #
+        # def sort_on_mass(masses):
+        #     sorted = np.argsort(masses)
+        #     return sorted
+        # self.sort_mass = to.Sorting(self,self.sorting_layout, sort_on_mass, "Sort masses")
+        #
+        # def sort_biggest_relative_difference(traces):
+        #     if traces.ndim == 3:
+        #         traces = traces[0]
+        #     rel_diffs = np.empty(traces.shape[0])
+        #     for i, trace in enumerate(traces):
+        #         if np.mean(trace) > 0.7 * np.std(trace):
+        #             #preselect for noise
+        #             biggestdiff = np.ptp(trace)
+        #             mean = np.mean(trace)
+        #             rel_diff = biggestdiff / mean
+        #             rel_diffs[i] = rel_diff
+        #         else: rel_diffs[i] = 0
+        #     sorted = np.argsort(rel_diffs)[::-1]
+        #     return sorted
+        # self.sort_rel = to.Sorting(self, self.sorting_layout, sort_biggest_relative_difference, "Sorting on highest rel diff")
+        #
+        # def sorting_max(traces):
+        #     if traces.ndim == 3:
+        #         traces = traces[0]
+        #     means = np.mean(traces, axis=1)
+        #     sorted = np.argsort(means)
+        #     sorted = sorted[::-1]
+        #     return sorted
+        # self.sort_max = to.Sorting(self,self.sorting_layout,sorting_max, "Sorting on highest trace")
+        #
         # create menu
         menubar = QtWidgets.QMenuBar()
         self.actionFile = menubar.addMenu("File")
@@ -219,20 +228,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settingsMenubar.addAction(self.plotsettings_button)
 
 
-        self.overallverticallayout.addWidget(menubar)
-        self.overallverticallayout.addLayout(self.horizontal_splitter)
-        self.masses_selected_layout.addLayout(self.masses_selected_layout_header, stretch = 10)
-        self.masses_selected_layout.addWidget(self.masses_selected_widget, stretch = 10)
+        self.overallverticallayout.addWidget(menubar,stretch = 1)
+        self.overallverticallayout.addWidget(self.horizontal_splitter,stretch = 40)
+        # self.masses_selected_layout.addLayout(self.masses_selected_layout_header, stretch = 10)
+        # self.masses_selected_layout.addWidget(self.masses_selected_widget, stretch = 10)
+        #
+        # self.peak_info_layout.addLayout(self.peak_info_layout_header)
+        # self.peak_info_layout.addLayout(self.plot_peak_layout)
+        # self.infoonmasses_layout.addLayout(self.masses_selected_layout,stretch = 3)
+        # self.infoonmasses_layout.addLayout(self.peak_info_layout,stretch = 2)
+        #
+        #
+        # self.masslists_layout.addWidget(QtWidgets.QLabel("Masslist"),stretch = 1)
+        # self.masslists_layout.addWidget(self.masslist_widget,stretch = 40)
 
-        self.peak_info_layout.addLayout(self.peak_info_layout_header)
-        self.peak_info_layout.addLayout(self.plot_peak_layout)
-        self.infoonmasses_layout.addLayout(self.masses_selected_layout,stretch = 3)
-        self.infoonmasses_layout.addLayout(self.peak_info_layout,stretch = 2)
-
-
-        self.masslists_layout.addWidget(QtWidgets.QLabel("Masslist"),stretch = 1)
-        self.masslists_layout.addWidget(self.masslist_widget,stretch = 40)
-        self.setCentralWidget(self.centralwidget)
 
     def open_file(self):
         # show the dialog

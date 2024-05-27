@@ -4,6 +4,7 @@ from PyQt5.QtGui import QRegExpValidator
 import workflows_ptg.trace_objects as to
 from PyQt5.QtCore import *
 import numpy as np
+import pyqtgraph as pg
 class ColorField(QtWidgets.QWidget):
     def __init__(self, color, parent=None):
         self.color = color
@@ -36,11 +37,7 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
         self.multiple_check_layout = QtWidgets.QHBoxLayout()
         self.sorting_layout = QtWidgets.QHBoxLayout()
-        self.layout.addLayout(self.jump_to_mass_layout)
-        self.layout.addLayout(self.jump_to_compound_layout)
-        self.layout.addLayout(self.multiple_check_layout)
-        self.layout.addLayout(self.sorting_layout)
-        self.layout.addWidget(self.masslist_widget)
+
 
         # list of masses
         self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
@@ -79,6 +76,13 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.sort_rel = to.Sorting(self, self.sorting_layout, self.sort_biggest_relative_difference,"Sorting on highest rel diff")
         self.sort_max = to.Sorting(self, self.sorting_layout, self.sorting_max, "Sorting on highest trace")
 
+
+        self.layout.addLayout(self.jump_to_mass_layout)
+        self.layout.addLayout(self.jump_to_compound_layout)
+        self.layout.addLayout(self.multiple_check_layout)
+        self.layout.addLayout(self.sorting_layout)
+        self.layout.addWidget(self.masslist_widget)
+
     def sort_on_mass(self, masses):
         sorted = np.argsort(masses)
         return sorted
@@ -107,8 +111,45 @@ class Masslist_Frame(QtWidgets.QFrame):
         sorted = sorted[::-1]
         return sorted
 
+class SelectedMassesFrame(QtWidgets.QFrame):
+    def __init__(self):
+        super().__init__()
+        # #list of selected masses
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
+        self.masses_selected_widget = to.QlistWidget_Selected_Masses(self)
+        self.header = QtWidgets.QHBoxLayout()
+        self.header.addWidget(QtWidgets.QLabel("Selected Masses"))
+        self.deselectall_button = QtWidgets.QPushButton("Deselect all")
+        self.export_button = QtWidgets.QPushButton("Export as .csv")
+        self.header.addWidget(self.deselectall_button)
+        self.header.addWidget(self.export_button)
 
+        self.layout.addLayout(self.header)
+        self.layout.addWidget(self.masses_selected_widget)
 
+class Peak_Frame(QtWidgets.QFrame):
+    def __init__(self):
+        super().__init__()
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.header = QtWidgets.QHBoxLayout()
+        self.header.addWidget(QtWidgets.QLabel("Peak of selected Mass"))
+        self.peakmasslabel = QtWidgets.QLabel("")
+        self.header.addWidget(self.peakmasslabel)
+        self.peakmasscolor = ColorField((0,0,0))
+        self.header.addWidget(self.peakmasscolor)
+        # self.peak_info_deselectall_button = QtWidgets.QPushButton("Deselect")
+        # self.peak_info_layout_header.addWidget(self.peak_info_deselectall_button)
+        self.plot_peak_layout = QtWidgets.QVBoxLayout()
+        self.graph_peak_Widget = pg.PlotWidget()
+        axis = pg.DateAxisItem()
+        self.graph_peak_Widget.setAxisItems({'bottom': axis})
+        self.plot_peak_layout.addWidget(self.graph_peak_Widget)
+
+        self.layout.addLayout(self.header)
+        self.layout.addLayout(self.plot_peak_layout)
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
