@@ -316,6 +316,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.setLabel('bottom', "Time")
         self.graphWidget.setLabel('left', "Signal [cps]")
         self.graphWidget.setLogMode(y=True)
+        self.graphWidget.showGrid(y = True)
+        self.graphWidget.showGrid(x = True)
         self.graphWidget.addLegend()
         # make bg plots
         # pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])
@@ -385,15 +387,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def multiple_check_pressed(self):
-        print(self.multiple_check.text().split("-"))
+        print(f"Input: {self.multiple_check.text()}")
         borders = self.multiple_check.text().split("-")
         if len(borders) == 1:
             index = int(borders[0]) -1
             self.masses_selected_widget.add_index_to_selected_masses(index, self)
         if len(borders) == 2:
             lower, upper = borders
-            lower = int(lower) -1
-            upper = int(upper) -1
+            lower,upper = int(lower),int(upper)
+            if lower < 0:
+                lower = 0
+            else:
+                lower = lower -1
+            upper = upper -1
             if lower < upper:
                 print(lower, upper)
                 self.masses_selected_widget.add_index_to_selected_masses(lower,self,upper_index=upper)
@@ -446,6 +452,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tracesplot = self.graphWidget.plot(self.tr.Times, trace,
                                                   pen=pg.mkPen(color, width=width),
                                                   name=f"m/z {round(mass,6)} - {to.get_names_out_of_element_numbers(composition)}")
+            self.tracesplot.scene().sigMouseClicked.connect(self.mouse_double_click_on_empty)
         self.vb.autoRange()
 
 
@@ -463,7 +470,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
         # self.vb.setXRange(*newxlims, padding = 0)
 
-
+    def mouse_double_click_on_empty(self,ev):
+        if ev.double():
+            xpos = self.vb.mapToView(ev.pos()).x()
+            print(xpos)
 
 
 
