@@ -70,7 +70,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.centralwidget = QtWidgets.QWidget(self)
         # main layout setup
         self.overallverticallayout = QtWidgets.QVBoxLayout(self.centralwidget) # all with bar for files and interaction laout
+        self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal)
+        self.horizontal_splitter.setSizes([300, 300])
+        self.horizontal_splitter.setMinimumSize(100, 100)
+        self.horizontal_splitter.setMaximumSize(400, 1000)
         self.horizontalLayout = QtWidgets.QHBoxLayout() # overall horizontallayout with left column and plot
+
         self.left_column_layout = QtWidgets.QVBoxLayout() #layout on the left with the masslist, and other stuff
         self.infoonmasses_layout = QtWidgets.QHBoxLayout()
         self.masses_selected_layout = QtWidgets.QVBoxLayout()
@@ -192,7 +197,7 @@ class MainWindow(QtWidgets.QMainWindow):
             sorted = sorted[::-1]
             return sorted
         self.sort_max = to.Sorting(self,self.sorting_layout,sorting_max, "Sorting on highest trace")
-        
+
         # create menu
         menubar = QtWidgets.QMenuBar()
         self.actionFile = menubar.addMenu("File")
@@ -215,7 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         self.overallverticallayout.addWidget(menubar)
-        self.overallverticallayout.addLayout(self.horizontalLayout)
+        self.overallverticallayout.addLayout(self.horizontal_splitter)
         self.masses_selected_layout.addLayout(self.masses_selected_layout_header, stretch = 10)
         self.masses_selected_layout.addWidget(self.masses_selected_widget, stretch = 10)
 
