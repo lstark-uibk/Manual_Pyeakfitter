@@ -371,7 +371,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     element_numbers_merged = element_numbers_merged[sorted_on_masses,:]
                     masses_new = masses_merged
                     element_numbers_new = element_numbers_merged
-                compound_names = mo.get_names_out_of_element_numbers(element_numbers_new)
+                compound_names = np.array(mo.get_names_out_of_element_numbers(element_numbers_new))
                 new_masslist = mo._Data(masses_new,element_numbers_new,compound_names)
                 self.ml = mo.Mass_iso_sugglist(new_masslist)
                 self.ml.redo_qlist(self.masslist_widget)
