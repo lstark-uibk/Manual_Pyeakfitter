@@ -578,6 +578,7 @@ class Spectrum():
             new peakshape around mass
 
         '''
+        # print("make single peak")
         peakshape_index_low = min(range(len(self.peakshapemiddle)), key=lambda i: abs(self.peakshapemiddle[i] - mass) if self.peakshapemiddle[i] < mass else float('inf'))
         ind_peak, deviation = self._find_nearest(self.massaxis, mass)
         lowind = ind_peak - 200
@@ -592,6 +593,19 @@ class Spectrum():
             fact = dx/d #this factor is 0 if mass is near the lower bound and 1 if it is near the higher bound
             # print(f"fact {fact} between {self.peakshapemiddle[peakshape_index_low]}, {self.peakshapemiddle[peakshape_index_low +1]}")
             peakshape_this = self.peakshape[peakshape_index_low] * (1-fact) + self.peakshape[peakshape_index_low + 1] * fact
+        if peakshape_massaxis_this_mass.shape[0] < peakshape_this.shape[0]:
+        # if the massaxis is to short (at the end of the spectum) extend the massaxis
+            initial_length = peakshape_massaxis_this_mass.shape[0]
+            elements_needed = peakshape_this.shape[0] - initial_length
+            step_size = peakshape_massaxis_this_mass[-1] - peakshape_massaxis_this_mass[-2]
+            additional_elements = np.arange(peakshape_massaxis_this_mass[-1]+step_size,
+                                            peakshape_massaxis_this_mass[-1]+ (elements_needed + 1) * step_size,
+                                            step_size)
+            extended_list = np.concatenate((peakshape_massaxis_this_mass, additional_elements))
+            peakshape_massaxis_this_mass = extended_list
+
+        print(peakshape_massaxis_this_mass,peakshape_this, massaxis_this_zoom)
+        print(peakshape_massaxis_this_mass.shape,peakshape_this.shape, massaxis_this_zoom.shape)
         peakshape_interpolated = np.interp(massaxis_this_zoom, peakshape_massaxis_this_mass, peakshape_this,left= 0, right= 0)
 
         return massaxis_this_zoom, peakshape_interpolated

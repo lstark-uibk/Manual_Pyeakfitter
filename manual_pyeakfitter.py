@@ -57,6 +57,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_loaded = False
         self.init_Ui_file_not_loaded()
 
+        # to not load file everytime uncomment here
+        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
+        self.init_basket_objects()
+        self.init_UI_file_loaded()
+        self.init_plots(self.graphWidget)
+        # self.file_loaded = True
+
 
 
     def init_Ui_file_not_loaded(self):
