@@ -59,11 +59,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ## to not load file everytime uncomment here
         # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5"
-        self.filename = r"D:\CLOUD16T_PTR3\data\results\_result_highReso.hdf5"
-        self.init_basket_objects()
-        self.init_UI_file_loaded()
-        self.init_plots()
-        self.file_loaded = True
+        # self.filename = r"D:\CLOUD16T_PTR3\data\results\_result_highReso.hdf5"
+        # self.init_basket_objects()
+        # self.init_UI_file_loaded()
+        # self.init_plots()
+        # self.file_loaded = True
 
 
 
@@ -95,9 +95,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settingsMenubar.addAction(self.plotsettings_button)
 
         self.overallverticallayout.addWidget(menubar,stretch = 1)
-        self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal) # first horizontal splitter with masslist on left and traces on right
+
+        # first horizontal splitter with masslist on left and traces on right
+        self.horizontal_splitter = QtWidgets.QSplitter(Qt.Horizontal)
         self.overallverticallayout.addWidget(self.horizontal_splitter,stretch = 40)
 
+        # vertical splitter with masslist on top and selected masses at bottom
         self.left_splitter_masslist_info = QtWidgets.QSplitter(Qt.Vertical) # vertical splitter with masslist on top and selected masses at bottom
         self.masslist_frame = po.Masslist_Frame()
         self.left_splitter_masslist_info.addWidget(self.masslist_frame)
@@ -109,7 +112,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.setAxisItems({'bottom': axis})
         self.horizontal_splitter.addWidget(self.graphWidget)
 
-        self.splitter_selected_peak = QtWidgets.QSplitter(Qt.Horizontal) # horizontal splitter with selected masses left and peak on right
+        # horizontal splitter with selected masses left and peak on right
+        self.splitter_selected_peak = QtWidgets.QSplitter(Qt.Horizontal)
         self.masses_selected_frame = po.SelectedMassesFrame()
         self.splitter_selected_peak.addWidget(self.masses_selected_frame)
         self.plot_peak_frame = po.Peak_Frame()
@@ -185,7 +189,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #jump to mass widget
         self.masslist_frame.jump_to_mass_input.returnPressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_mass_to_selected_masses(self.masslist_frame.jump_to_mass_input.text(),self))
-        self.masslist_frame.jump_to_compound_button.pressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_compound(self.masslist_frame.jump_to_compound_input.text(),self))
         self.masslist_frame.jump_to_compound_input.returnPressed.connect(lambda: self.masses_selected_frame.masses_selected_widget.add_compound(self.masslist_frame.jump_to_compound_input.text(),self))
         self.masslist_frame.multiple_check_OK_Button.pressed.connect(self.multiple_check_pressed)
         self.masslist_frame.multiple_check.returnPressed.connect(self.multiple_check_pressed)
@@ -193,7 +196,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # #sorting widgets - give sorting function define sorting object,
         self.masslist_frame.sort_max.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_max.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
         self.masslist_frame.sort_rel.sortingbutton.pressed.connect(lambda : self.masslist_frame.sort_rel.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
-        self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
+        self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses))
+        self.masslist_frame.sort_primary_ions.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_primary_ions.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses))
+
         #menubar stuff
 
         self.plotsettings_window.load(self.tr.hightimeres_status,self.tr.bg_corr_status,self.tr.averaging_time_s)
@@ -212,33 +217,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.showGrid(y = True)
         self.graphWidget.showGrid(x = True)
         self.graphWidget.addLegend()
-        # make bg plots
-        # pyqtgraph_objects.replot_spectra(self,self.plot_settings["show_plots"])
-
-        # set the restrictions on the movement
         self.vb = self.graphWidget.getViewBox()
         self.vb.autoRange()
         self.vb.setMenuEnabled(False)
         self.vb.setAspectLocked(lock=False)
         self.vb.enableAutoRange(axis='y', enable=True)
-        # when xrange changed make the following
-        # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
-        self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
         self.update_plots()
 
+        # small plot
         self.plot_peak_frame.graph_peak_Widget.setBackground(self.plot_settings["background_color"])
         self.plot_peak_frame.graph_peak_Widget.showGrid(y = True)
         self.plot_peak_frame.graph_peak_Widget.getAxis('bottom').setPen(pg.mkPen(color='k'))
         self.plot_peak_frame.graph_peak_Widget.getAxis('left').setPen(pg.mkPen(color='k'))
-        # font = self.plot_settings["font"]
-        # self.graph_peak_Widget.getAxis('bottom').setStyle(tickFont=font)  # Set the font for the x-axis ticks
-        # self.graph_peak_Widget.getAxis('left').setStyle(tickFont=font)  # Set the font for the x-axis ticks
-        # self.graph_peak_Widget.getAxis('bottom').setPen('k')
-        # self.graph_peak_Widget.getAxis('left').setPen('k')
-        # self.graph_peak_Widget.getAxis('bottom').setTextPen('k')
-        # self.graph_peak_Widget.getAxis('left').setTextPen('k')
-        # self.graph_peak_Widget.getAxis('left').setLabel(text="Signal", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
-        # self.graph_peak_Widget.getAxis('bottom').setLabel(text="m/z [Th]", units=None, unitPrefix=None, **{'color': 'k', 'font-size': '12pt'})
         self.plot_peak_frame.graph_peak_Widget.setLogMode(y=True)
         self.plot_peak_frame.graph_peak_Widget.addLegend()
 
@@ -252,13 +242,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb_peak.enableAutoRange(axis='y', enable=True)
         pyqto.replot_spectra(self, self.plot_peak_frame.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
 
-        # when xrange changed make the following
-        # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
-        # self.vb_peak.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
+
 
     def export_currently_selected_masses_to_csv(self):
         selected_masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
-        selected_compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
+
         print(f"Export {selected_masses}")
         if selected_masses.shape[0] > 0:
             defaultsavefilename = os.path.join(self.filename,"Selected_traces.csv")
@@ -267,6 +255,13 @@ class MainWindow(QtWidgets.QMainWindow):
                                                                 "Save File", defaultsavefilename, "csv_files(*.csv)",
                                                                 options=options)
             if savefilename:
+                selected_compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
+                order_massestoplot = np.argsort(selected_masses)
+
+                masslist = self.tr.MasslistMasses
+                traces = self.tr.Traces
+                massestoexport = np.where(np.any((np.isclose(masslist[:, None], selected_masses, rtol=1e-5, atol=1e-8)), axis=1))[0]
+                tracestoexport = traces[massestoexport][np.argsort(order_massestoplot)]
                 print(self.tr.Traces)
                 print(f"{selected_compositions}")
                 compnames = mo.get_names_out_of_element_numbers(selected_compositions)
@@ -274,10 +269,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(compnames)
                 header = [f"{round(mass,6)}-{compname}" for mass,compname in zip(selected_masses,compnames)]
                 print(header)
-                export_df = pd.DataFrame(self.tr.Traces.T,columns=header,index=self.tr.Times)
+                export_df = pd.DataFrame(tracestoexport.T,columns=header,index=self.tr.Times)
                 export_df = export_df[export_df.columns[order_of_masses]]
                 print(export_df)
-                export_df.to_csv(savefilename)
+                export_df.to_csv(savefilename,index_label='UNIXTime')
 
 
     def multiple_check_pressed(self):
@@ -317,26 +312,6 @@ class MainWindow(QtWidgets.QMainWindow):
         for item in self.graphWidget.allChildItems():
             self.graphWidget.removeItem(item)
 
-    def on_xlims_changed(self, viewbox):
-        # for a similar examples look at:
-        # import pyqtgraph.examples
-        # pyqtgraph.examples.run()
-        # InfiniteLine Example
-        #documentation https://pyqtgraph.readthedocs.io/en/latest/api_reference/graphicsItems/infiniteline.html
-        pass
-    #     xlims, ylims = viewbox.viewRange()
-    #     # print("xlims changed ", xlims, np.diff(xlims))
-    #
-    #     if np.diff(xlims) > 1.1:
-    #         pyqtgraph_objects.remove_all_vlines(self)
-    #     else:
-    #         pyqtgraph_objects.redraw_vlines(self, xlims)
-    #     if np.diff(xlims) < 0.7:
-    #         # only if we are shure, that we have the influence of only one peak we draw the local fit
-    #         def to_worker():
-    #             pyqtgraph_objects.redraw_localfit(self,xlims)
-    #         worker = Worker(to_worker)
-    #         self.threadpool.start(worker)
 
     def update_plots(self):
         self.remove_all_plot_items()
@@ -365,21 +340,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb.autoRange()
 
 
-
-    def mouse_double_click_on_empty(self,ev):
-        if ev.double():
-            xpos = self.vb.mapToView(ev.pos()).x()
-            print(xpos)
-
-
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_D:
-            xlims, ylims = self.vb.viewRange()
-            self.vb.setXRange(xlims[0] +1 , xlims[1] + 1, padding = 0)
-        if event.key() == Qt.Key_A:
-            xlims, ylims = self.vb.viewRange()
-            self.vb.setXRange(xlims[0] - 1, xlims[1] - 1, padding = 0)
 
 
 def main():

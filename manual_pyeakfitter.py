@@ -109,12 +109,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.jump_to_mass_input.setValidator(QtGui.QDoubleValidator(0., 500., 4))
         self.label_jump_compound = QtWidgets.QLabel("Jump to compound: ")
         self.jump_to_compound_input = QtWidgets.QLineEdit()
-        self.jump_to_compound_button = QtWidgets.QPushButton("OK")
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
 
         # create menu
         menubar = QtWidgets.QMenuBar()
@@ -227,7 +225,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_widget.itemClicked.connect(self.jump_to_mass)
         #jump to mass widget
         self.jump_to_mass_input.textChanged.connect(self.jump_to_mass)
-        # self.jump_to_compound_button.pressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         self.jump_to_compound_input.returnPressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         #menubar stuff
         # change range action in menubar

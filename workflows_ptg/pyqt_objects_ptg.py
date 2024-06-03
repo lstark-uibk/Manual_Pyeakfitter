@@ -65,21 +65,16 @@ class Masslist_Frame(QtWidgets.QFrame):
 
         self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+): ")
         self.jump_to_compound_input = QtWidgets.QLineEdit()
-        regexcomp = QRegExp(r'^(([a-zA-Z]+)(\d+)?)+\+$')
-        validatorcomp = QRegExpValidator(regexcomp, self.jump_to_compound_input)
-        self.jump_to_compound_input.setValidator(validatorcomp)
-        self.jump_to_compound_button = QtWidgets.QPushButton("OK")
-        self.jump_to_mass_layout.addWidget(self.label_jump_mass)
-        self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
+        self.jump_to_compound_status = QtWidgets.QLabel("")
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_input)
-        self.jump_to_compound_status = QtWidgets.QLabel("")
+
         self.jump_to_compound_layout.addWidget(self.jump_to_compound_status)
-        # self.jump_to_compound_layout.addWidget(self.jump_to_compound_button)
 
         self.sort_mass = to.Sorting(self, self.sorting_layout, self.sort_on_mass, "Sort masses")
         self.sort_rel = to.Sorting(self, self.sorting_layout, self.sort_biggest_relative_difference,"Sorting on highest rel diff")
         self.sort_max = to.Sorting(self, self.sorting_layout, self.sorting_max, "Sorting on highest trace")
+        self.sort_primary_ions = to.Sorting(self, self.sorting_layout, self.sort_on_primary, "Primary Ions")
 
 
         self.layout.addLayout(self.jump_to_mass_layout)
@@ -87,6 +82,14 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.layout.addLayout(self.multiple_check_layout)
         self.layout.addLayout(self.sorting_layout)
         self.layout.addWidget(self.masslist_widget)
+
+    def sort_on_primary(self, masses):
+        primary_ions = to.Traces.Primary_ions
+        mask = np.any((np.isclose(masses[:, None], primary_ions, rtol=1e-5, atol=1e-8)), axis=1)
+        primary_ions_indices = np.where(mask)[0]
+        others_indices = np.where(~mask)[0]
+        sorted = np.concatenate([primary_ions_indices,others_indices])
+        return sorted
 
     def sort_on_mass(self, masses):
         sorted = np.argsort(masses)
@@ -204,7 +207,7 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
 
     def change_labels(self,hightimeres_status,bg_corr_status,averaging_time_s):
         if hightimeres_status:
-            curr_loaded_time_res = "High Time Resolution"
+            curr_loaded_time_res = "High Time Resolution averages over 60 s"
         else: curr_loaded_time_res = f"Averages over {averaging_time_s}s"
         if bg_corr_status:
             curr_loaded_bg_corr_status = "Background corrected"
@@ -230,7 +233,8 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
             self.parent.tr.hightimeres = False
 
         self.parent.tr.update_Times_Traces("all")
-        message_box.close()
+        if checkbox.isChecked():
+            message_box.close()
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
     def set_raw(self):

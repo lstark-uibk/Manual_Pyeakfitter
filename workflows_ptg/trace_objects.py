@@ -7,7 +7,6 @@ import pyqtgraph
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
-import pyqtgraph as pg
 import  workflows_pyeakfitter.pyqtgraph_objects as pyqto
 import workflows_pyeakfitter.masslist_objects as mo
 import re
@@ -28,6 +27,22 @@ class Traces():
                                 126.90448,
                                 27.9763
                                ])
+    Primary_ions = np.array([
+        18.033836,
+        19.017856,
+        35.06037,
+        36.04439,
+        37.02841,
+        52.08692,
+        53.07094,
+        54.05495,
+        55.03897,
+        69.11347,
+        70.09749,
+        71.08150,
+        72.06552,
+        73.04954,
+    ])
     def __init__(self,Filename,hightimeres=True,startTime = 0, endTime = 0,bg_corr = True):
         self.Times = []
         self.Timeindices = []
@@ -37,6 +52,7 @@ class Traces():
         self.MasslistElementsMasses = []
         self.MasslistCompositions = []
         self.Traces = np.array([])
+        self.hightimeresTraces = np.array([])
         self.FixedTraces = np.array([])
         self.filename = Filename
         # self.starttime = startTime
@@ -90,13 +106,6 @@ class Traces():
                 self.Times = f["AvgStickCpsTimes"][()]
                 print("Load Average Times")
 
-            # if self.starttime < self.endtime:
-            #     self.Timeindices = np.where((self.Times >= self.starttime) & (self.Times <= self.endtime))[0]
-            #     self.Times = self.Times[self.Timeindices]
-            # else:
-            #     self.Timeindices = np.where(np.full(self.Times.shape, True))[0]
-            # self.Times = self.Times - self.timeshift_h * 60*60
-
             not_avg_times_shape = f["Times"].shape
             avg_times_shape = f["AvgStickCpsTimes"].shape
             self.averaging_time_s = round(not_avg_times_shape[0]/avg_times_shape[0])
@@ -135,57 +144,58 @@ class Traces():
 
 
         with h5py.File(filename, "r") as f:
+            load_traces = True
             if self.hightimeres:
-                print("Loading high time resolution Traces")
-                # try:
-                #     times = f["Times"][()]
-                #     interpolated = self.interpolate(times,self.interpolation_s)
-                #     self.Times = interpolated
-                # except:
-                #     print("Could not load high res time, maybe this is an average-only result file?")
-                #     return []
-                if self.bg_corr:
-                    if "CorrStickCps" in f:
-                        try:
-                            ds = f["CorrStickCps"]
-                            self.bg_corr_status = True
-                            self.hightimeres_status = True
-                        except:
-                            print("Could not load hightimres bg corr")
-                            self.bg_corr_status = False
-                            self.hightimeres_status = False
+                if self.hightimeresTraces.size == 0:
+                    print("Loading high time resolution Traces")
+                    if self.bg_corr:
+                        if "CorrStickCps" in f:
+                            try:
+                                ds = f["CorrStickCps"]
+                                self.bg_corr_status = True
+                                self.hightimeres_status = True
+                            except:
+                                print("Could not load hightimres bg corr")
+                                self.bg_corr_status = False
+                                self.hightimeres_status = False
+
+                        else:
+                            print("No high time resolution available, is this a average only file?")
+                            try:
+                                ds = f["CorrAvgStickCps"]
+                                self.bg_corr_status = True
+                                self.hightimeres_status = False
+                            except:
+                                print("Could not load high time res bg corr")
+                                self.bg_corr_status = False
+                                self.hightimeres_status = False
+
 
                     else:
-                        print("No high time resolution available, is this a average only file?")
-                        try:
-                            ds = f["CorrAvgStickCps"]
-                            self.bg_corr_status = True
-                            self.hightimeres_status = False
-                        except:
-                            print("Could not load high time res bg corr")
-                            self.bg_corr_status = False
-                            self.hightimeres_status = False
-
+                        if "StickCps" in f:
+                            try:
+                                ds = f["StickCps"]
+                                self.bg_corr_status = False
+                                self.hightimeres_status = True
+                            except:
+                                print("Could not load high time res bg not corr")
+                                self.bg_corr_status = False
+                                self.hightimeres_status = False
+                        else:
+                            print("No high time resolution available, is this a average only file?")
+                            try:
+                                ds = f["AvgStickCps"]
+                                self.bg_corr_status = False
+                                self.hightimeres_status = False
+                            except:
+                                self.bg_corr_status = False
+                                self.hightimeres_status = False
 
                 else:
-                    if "StickCps" in f:
-                        try:
-                            ds = f["StickCps"]
-                            self.bg_corr_status = False
-                            self.hightimeres_status = True
-                        except:
-                            print("Could not load high time res bg not corr")
-                            self.bg_corr_status = False
-                            self.hightimeres_status = False
-                    else:
-                        print("No high time resolution available, is this a average only file?")
-                        try:
-                            ds = f["AvgStickCps"]
-                            self.bg_corr_status = False
-                            self.hightimeres_status = False
-                        except:
-                            self.bg_corr_status = False
-                            self.hightimeres_status = False
+                    print("Already high res Traces loaded")
+                    Traces = self.hightimeresTraces
+                    self.Traces = Traces
+                    load_traces =False
             else:
                 self.Times = f["AvgStickCpsTimes"][()]
                 print("Loading Average Traces")
@@ -207,15 +217,16 @@ class Traces():
                         print("Could not load avg bg corr")
                         self.bg_corr_status = False
                         self.hightimeres_status = False
-            if massesToLoad != "all":
-                Traces = ds[Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
-            else:
-                Traces = ds[Massestoloadindices, :]
+            if load_traces:
+                if massesToLoad != "all":
+                    Traces = ds[Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
+                else:
+                    Traces = ds[Massestoloadindices, :]
 
-            if self.hightimeres:
-                interpolationed_traces = self.interpolate(Traces, self.interpolation_s)
-                Traces  = interpolationed_traces
-
+                if self.hightimeres:
+                    interpolated_traces = self.interpolate(Traces, self.interpolation_s)
+                    Traces  = interpolated_traces
+                    self.hightimeresTraces = Traces
             return Traces
     def update_Traces(self, massesToLoad = "none"):
             self.Traces = self.load_Traces(massesToLoad)
@@ -227,7 +238,7 @@ class Traces():
         new_timedim_lenght = int(round(data.shape[1]/interpolation_time))
 
         original_x = np.arange(data.shape[1])
-        new_x = np.arange(new_timedim_lenght)
+        new_x = np.linspace(0,data.shape[1]-1,new_timedim_lenght)
         interpolated_data = np.zeros((data.shape[0], new_timedim_lenght))
         for i in range(data.shape[0]):
             interp_func = interp1d(original_x, data[i, :], kind='linear')
@@ -297,7 +308,6 @@ class QlistWidget_Masslist(QListWidget):
                 self.setCurrentItem(self.item(lower_index))
                 self.check_multiple(lower_index,upper_index,parent)
     def jump_to_compound(self,compoundstring,parent):
-        print(compoundstring)
         mass, elementnumber = mo.get_element_numbers_out_of_names(compoundstring)
         self.jump_to_mass(str(mass),parent)
     def masslist_tick_changed(self,parent):
@@ -312,16 +322,14 @@ class QlistWidget_Masslist(QListWidget):
                     self.currentmasses = np.append(self.currentmasses, self.masses[i])
                     self.currentcompositions = np.append(self.currentcompositions, [self.compositions[i, :]], axis=0)
 
-            # parent.tr.update_Traces(self.currentmasses)
             parent.update_plots()
 
-    def check_single(self, index, parent, massesselectedlist):
+    def check_single(self, index, parent):
         item = self.item(index)
         item.setCheckState(Qt.Checked)
         self.currentmasses = np.append(self.currentmasses, self.masses[index])
         self.currentcompositions = np.append(self.currentcompositions, [self.compositions[index, :]], axis=0)
 
-        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
     def check_multiple(self,lower, upper,parent):
         """
@@ -340,8 +348,6 @@ class QlistWidget_Masslist(QListWidget):
             self.currentcompositions = np.append(self.currentcompositions, [self.compositions[i, :]], axis=0)
         self.load_on_tick = True
 
-
-        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
         
     def uncheck_all(self,parent):
@@ -356,35 +362,9 @@ class QlistWidget_Masslist(QListWidget):
         # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
 
-    def handle_double_click(self,item,parent):
-        print(f"Double-clicked: {item.text()}")
-        # list = re.split(r'[ \t]+', item.text())
-        # mass = float(list[1])
-        # if not np.any(mass == self.fixedMasses):
-        #     # add the mass to fixed
-        #     item.setBackground(Qt.red)
-        #     if len(list) >= 3:
-        #         compoundstr = str(list[2])
-        #         if len(list) == 4:
-        #             compoundstr += str(list[3])
-        #         _,compositionarray = get_element_numbers_out_of_names(compoundstr)
-        #     self.fixedMasses = np.append(self.fixedMasses,mass)
-        #     self.fixedcompositions = np.append(self.fixedcompositions, compositionarray[None,:], axis=0)
-        #     Trace = parent.tr.load_Traces(mass)
-        #     if parent.tr.FixedTraces.size == 0:
-        #         parent.tr.FixedTraces = np.zeros((0,Trace.size))
-        #     parent.tr.FixedTraces = np.append(parent.tr.FixedTraces, parent.tr.load_Traces(mass)[None,:], axis=0)
-        # else:
-        #     #if it is already in fixed -> delete it
-        #     # add the mass to fixed
-        #     item.setBackground(QColor(255, 255, 255))
-        #     index_of_deletion = np.where(self.fixedMasses == mass)
-        #     self.fixedMasses = np.delete(self.fixedMasses, index_of_deletion)
-        #     self.fixedcompositions = np.delete(self.fixedcompositions , index_of_deletion, axis = 0)
-        #     parent.tr.FixedTraces = np.delete(parent.tr.FixedTraces , index_of_deletion, axis = 0)
-        #
-        #
-        # parent.update_plots()
+    def handle_double_click(self,item):
+        pass
+
 
 class Sorting():
     def __init__(self, window,layout, Sorting_function, text):
@@ -494,15 +474,20 @@ class QlistWidget_Selected_Masses(QListWidget):
                 parent.update_plots()
 
     def add_compound(self,text,parent):
-        mass, elementnumber = mo.get_element_numbers_out_of_names(text)
-        print(mass,elementnumber)
-        elementnumber = elementnumber[0:8]
-        if mass in parent.masslist_frame.masslist_widget.masses:
-            self.add_one_mass(mass, np.array(elementnumber), parent)
-            parent.masslist_frame.jump_to_compound_status.setText("")
-        else:
-            parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
-
+        #first test with reg exp whether it is a compound name
+        regex = re.compile(r'^(([a-zA-Z]+)(\d+)?)+\+$')
+        match = regex.match(text)
+        if match:
+            mass, elementnumber = mo.get_element_numbers_out_of_names(text)
+            print(mass,elementnumber)
+            elementnumber = elementnumber[0:8]
+            if mass in parent.masslist_frame.masslist_widget.masses:
+                #second test whether we have it in masslist
+                self.add_one_mass(mass, np.array(elementnumber), parent)
+                parent.masslist_frame.jump_to_compound_status.setText("")
+            else:
+                parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
+        else: parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
     def add_item_to_selected_masses(self,item,button,parent):
         if button == 1:#left click
             row = int(parent.masslist_frame.masslist_widget.row(item))
@@ -678,4 +663,5 @@ def highest_change_signal(data):
 
 
 # tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5")
-# traces = tr.load_Traces("all")
+# tr = Traces(r"D:\CLOUD16T_PTR3\data\results\_result_highReso.hdf5")
+
