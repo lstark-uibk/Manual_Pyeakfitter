@@ -11,6 +11,8 @@ import pyqtgraph as pg
 import  workflows_pyeakfitter.pyqtgraph_objects as pyqto
 import workflows_pyeakfitter.masslist_objects as mo
 import re
+from scipy.interpolate import interp1d
+
 class Traces():
     MasslistElements =["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S","S(34)", "I", "Si"] #iodine, silizium
     Order_of_letters = [0, 1, 2, 9, 4, 5, 6, 7 ,8 , 10 ,3]
@@ -37,15 +39,18 @@ class Traces():
         self.Traces = np.array([])
         self.FixedTraces = np.array([])
         self.filename = Filename
-        self.starttime = startTime
-        self.endtime = endTime
+        # self.starttime = startTime
+        # self.endtime = endTime
         self.bg_corr = True
         self.hightimeres = False
         self.bg_corr_status = False
         self.hightimeres_status = False
         self.averaging_time_s = 0
         self.timeshift_h = 1
+        self.interpolation_s = 60
+
         self._init_information()
+
     ##to show always when an entry gets changed
     # def on_change(self,name,value):
     #     print("changed",name,value)
@@ -75,7 +80,9 @@ class Traces():
             print("Loading Times:")
             if self.hightimeres:
                 try:
-                    self.Times = f["Times"][()]
+                    times = f["Times"][()]
+                    interpolated = self.interpolate(times,self.interpolation_s)
+                    self.Times = interpolated
                 except:
                     print("Could not load high res time, maybe this is an average-only result file?")
                     self.Times = f["AvgStickCpsTimes"][()]
@@ -83,19 +90,21 @@ class Traces():
                 self.Times = f["AvgStickCpsTimes"][()]
                 print("Load Average Times")
 
-            if self.starttime < self.endtime:
-                self.Timeindices = np.where((self.Times >= self.starttime) & (self.Times <= self.endtime))[0]
-                self.Times = self.Times[self.Timeindices]
-            else:
-                self.Timeindices = np.where(np.full(self.Times.shape, True))[0]
-            self.Times = self.Times - self.timeshift_h * 60*60
+            # if self.starttime < self.endtime:
+            #     self.Timeindices = np.where((self.Times >= self.starttime) & (self.Times <= self.endtime))[0]
+            #     self.Times = self.Times[self.Timeindices]
+            # else:
+            #     self.Timeindices = np.where(np.full(self.Times.shape, True))[0]
+            # self.Times = self.Times - self.timeshift_h * 60*60
 
+            not_avg_times = f["Times"][()]
             avg_times = f["AvgStickCpsTimes"][()]
-            self.averaging_time_s = round(np.diff(avg_times).mean())
+            self.averaging_time_s = round(not_avg_times.shape[0]/avg_times.shape[0])
 
         return self.Times
 
     def load_Traces(self, massesToLoad = "none"):
+
         """
 
         :param filename:
@@ -119,7 +128,7 @@ class Traces():
                 return np.array([])
             elif massesToLoad == "all":
                 print("Loading all Masses")
-                Massestoloadindices = np.where(np.full(self.MasslistMasses.shape, True))
+                Massestoloadindices = np.where(np.full(self.MasslistMasses.shape, True))[0]
             else:
                 print("Unknow Masses to Load")
                 return np.array([])
@@ -129,7 +138,9 @@ class Traces():
             if self.hightimeres:
                 print("Loading high time resolution Traces")
                 try:
-                    self.Times = f["Times"][()]
+                    times = f["Times"][()]
+                    interpolated = self.interpolate(times,self.interpolation_s)
+                    self.Times = interpolated
                 except:
                     print("Could not load high res time, maybe this is an average-only result file?")
                     return []
@@ -154,6 +165,7 @@ class Traces():
                             print("Could not load high time res bg corr")
                             self.bg_corr_status = False
                             self.hightimeres_status = False
+
 
                 else:
                     if "CorrStickCps" in f:
@@ -196,18 +208,30 @@ class Traces():
                         self.bg_corr_status = False
                         self.hightimeres_status = False
 
+            Traces = ds[Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
+            Traces = Traces[0]
+            interpolationed_traces = self.interpolate(Traces, self.interpolation_s)
+            Traces  = interpolationed_traces
 
-
-            Traces = ds[:, self.Timeindices][Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
-            Traces
             return Traces
     def update_Traces(self, massesToLoad = "none"):
             self.Traces = self.load_Traces(massesToLoad)
 
+    def interpolate(self,data,interpolation_time):
+        # we assume that we have a point every second
+        if data.ndim == 1:
+            data = data.reshape(1, data.shape[0])
+        new_timedim_lenght = int(round(data.shape[1]/interpolation_time))
 
+        original_x = np.arange(data.shape[1])
+        new_x = np.arange(new_timedim_lenght)
+        interpolated_data = np.zeros((data.shape[0], new_timedim_lenght))
+        for i in range(data.shape[0]):
+            interp_func = interp1d(original_x, data[i, :], kind='linear')
+            interpolated_data[i, :] = interp_func(new_x)
 
+        return interpolated_data
 
-            # get all the indices of massesToLoad
 
 class QlistWidget_Masslist(QListWidget):
     itemClicked = pyqtSignal(QListWidgetItem, Qt.MouseButton)

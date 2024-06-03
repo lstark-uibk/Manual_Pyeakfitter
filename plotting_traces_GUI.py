@@ -338,7 +338,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #         self.threadpool.start(worker)
 
     def update_plots(self):
-        # set the restrictions on the movement
         self.remove_all_plot_items()
         traces = self.tr.Traces
         times = self.tr.Times
