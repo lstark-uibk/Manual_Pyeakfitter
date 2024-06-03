@@ -173,17 +173,25 @@ class HelpWindow(QtWidgets.QMainWindow):
 
 class AddnewElement(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
+        '''
+        make all layouts but add the entries after with the load function because this is dependent on the masslist and has to be loaded evertime newly
+        Parameters
+        ----------
+        parent
+        '''
         super(AddnewElement, self).__init__(parent)
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.show_mass_layout = QtWidgets.QHBoxLayout()
 
-
-
         self.parent = parent
         self.setWindowTitle("Add new Element")
+
+
+        self.setCentralWidget(self.centralWidget)
+    def load(self, names_elements):
         #make form layout
-        elements_implemented = ", ".join(self.parent.ml.names_elements)
+        elements_implemented = ", ".join(names_elements)
         self.label_add_compound = QtWidgets.QLabel(f"Add compound (elements implemented: {elements_implemented}): ")
         self.add_compound_input = QtWidgets.QLineEdit()
         self.add_compound_input.returnPressed.connect(lambda: self.add_compound(self.add_compound_input.text()))
@@ -204,8 +212,6 @@ class AddnewElement(QtWidgets.QMainWindow):
         closebutton = QtWidgets.QPushButton("Close")
         closebutton.clicked.connect(self.closeWindow)
         self.centralLayout.addWidget(closebutton)
-
-        self.setCentralWidget(self.centralWidget)
     def add_compound(self,compoundstring):
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
         self.parent.jump_to_mass(float(mass))
@@ -253,25 +259,13 @@ class TableModel(QtCore.QAbstractTableModel):
 class Show_total_Masslist(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(Show_total_Masslist, self).__init__(parent)
-        mass_iso_sugg_list = parent.ml
         self.setGeometry(10,10, 1000, 1000)
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
 
-        names_isotopes = [mo.get_names_out_of_element_numbers(el_numbers_one_parent_mass) for
-                                    el_numbers_one_parent_mass in mass_iso_sugg_list.isotopes.element_numbers]
-        names_masses_isotopes = [[str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(row_masses, row_names)] for
-                                 row_masses, row_names in zip(mass_iso_sugg_list.isotopes.masses, names_isotopes)]
-        names_masses_parent = [str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(mass_iso_sugg_list.masslist.masses,mo.get_names_out_of_element_numbers(mass_iso_sugg_list.masslist.element_numbers))]
-        dataparent = pd.DataFrame(names_masses_parent,columns = ['parent mass'])
-        dataiso = pd.DataFrame(names_masses_isotopes,columns=mass_iso_sugg_list.isotopes_to_include)
-        data = pd.concat([dataparent, dataiso], axis=1)
         self.table = QtWidgets.QTableView()
-        self.model = TableModel(data)
-        self.table.setModel(self.model)
+
         self.centralLayout.addWidget(self.table)
-
-
 
         self.parent = parent
         self.setWindowTitle("Total Masslist")
@@ -282,6 +276,20 @@ class Show_total_Masslist(QtWidgets.QMainWindow):
         self.centralLayout.addWidget(closebutton)
 
         self.setCentralWidget(self.centralWidget)
+
+    def load(self,ml):
+        mass_iso_sugg_list = ml
+
+        names_isotopes = [mo.get_names_out_of_element_numbers(el_numbers_one_parent_mass) for
+                                    el_numbers_one_parent_mass in mass_iso_sugg_list.isotopes.element_numbers]
+        names_masses_isotopes = [[str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(row_masses, row_names)] for
+                                 row_masses, row_names in zip(mass_iso_sugg_list.isotopes.masses, names_isotopes)]
+        names_masses_parent = [str(round(mass,6)) +" -- "+ el_names for mass, el_names in zip(mass_iso_sugg_list.masslist.masses,mo.get_names_out_of_element_numbers(mass_iso_sugg_list.masslist.element_numbers))]
+        dataparent = pd.DataFrame(names_masses_parent,columns = ['parent mass'])
+        dataiso = pd.DataFrame(names_masses_isotopes,columns=mass_iso_sugg_list.isotopes_to_include)
+        data = pd.concat([dataparent, dataiso], axis=1)
+        self.model = TableModel(data)
+        self.table.setModel(self.model)
 
     def closeWindow(self):
         self.close()
@@ -312,25 +320,13 @@ class RegExpValidator(QtGui.QValidator):
 class SelectMassRangeWindow(QtWidgets.QMainWindow):
     def __init__(self,parent):
         super(SelectMassRangeWindow, self).__init__(parent)
+        self.instruction = QtWidgets.QLabel("Change ranges by editing the lines\n Input the range like: 1-3 & 5 & 7-10")
+
         self.centralWidget = QtWidgets.QWidget(self)
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
-        self.parent = parent
 
-        self.instruction = QtWidgets.QLabel("Change ranges by editing the lines\n Input the range like: 1-3 & 5 & 7-10")
-        line_edits = {}
-        regex_validator = RegExpValidator(self)
         self.formlayout = QtWidgets.QFormLayout(self)
         self.centralLayout.addLayout(self.formlayout)
-
-        for i, key in enumerate(self.parent.ml.names_elements):
-            line_edits[key] = QtWidgets.QLineEdit(self)
-            line_edits[key].returnPressed.connect(self.change_ranges)
-
-            line_edits[key].setValidator(regex_validator)
-            pretext = self.get_regexp_outoflist(self.parent.ml.mass_suggestions_numbers[key])
-            line_edits[key].setText(pretext)
-            label = QtWidgets.QLabel(key)
-            self.formlayout.addRow(label, line_edits[key])
 
         collectbutton = QtWidgets.QPushButton("OK")
         collectbutton.clicked.connect(self.change_ranges)
@@ -340,9 +336,23 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         backtodefault.clicked.connect(self.go_backtodefault)
         self.centralLayout.addWidget(backtodefault)
 
-
+        self.parent = parent
 
         self.setCentralWidget(self.centralWidget)
+
+    def load(self,names_elements,mass_suggestions_numbers):
+        line_edits = {}
+        regex_validator = RegExpValidator(self)
+
+        for i, key in enumerate(names_elements):
+            line_edits[key] = QtWidgets.QLineEdit(self)
+            line_edits[key].returnPressed.connect(self.change_ranges)
+
+            line_edits[key].setValidator(regex_validator)
+            pretext = self.get_regexp_outoflist(mass_suggestions_numbers[key])
+            line_edits[key].setText(pretext)
+            label = QtWidgets.QLabel(key)
+            self.formlayout.addRow(label, line_edits[key])
     def go_backtodefault(self):
         mass_suggestions_numbers = {}
         for i, key in enumerate(self.parent.ml.names_elements):

@@ -50,7 +50,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Manual Pyeakfitter")
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
-        # self.filename = "C://Users//peaq//Uniarbeit//Python//Manual_Pyeakfitter//_result_no_masslist.hdf5"
         self.filename = None
         self.savefilename = None
         self.plot_added = False
@@ -58,10 +57,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_Ui_file_not_loaded()
 
         # to not load file everytime uncomment here
-        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
-        self.init_basket_objects()
-        self.init_UI_file_loaded()
-        self.init_plots(self.graphWidget)
+        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
+        # self.init_basket_objects()
+        # self.init_UI_file_loaded()
+        # self.init_plots(self.graphWidget)
         # self.file_loaded = True
 
 
@@ -97,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # other widgets for the verticalLayout1
         # self.button = QtWidgets.QPushButton("Print suggestions in view range")
-        self.button = QtWidgets.QPushButton("Manually add Element")
+        self.button_addnewelem_window = QtWidgets.QPushButton("Manually add Element")
         self.show_total_masslist_button = QtWidgets.QPushButton("Show total Masslist")
         self.save_button = QtWidgets.QPushButton("Save Masslist to .csv")
 
@@ -149,13 +148,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.settingsMenubar = menubar.addMenu("Settings")
         self.plotsettings_button = QtWidgets.QAction("Plot Settings", self)
+        self.plotsettings_window = po.PlotSettingsWindow(self)
         self.settingsMenubar.addAction(self.plotsettings_button)
 
 
         self.changemassranges = QtWidgets.QAction("Change Element ranges", self)
+        self.changemassrangesWindow = po.SelectMassRangeWindow(self)
         self.settingsMenubar.addAction(self.changemassranges)
+
         self.addElement = QtWidgets.QAction("Manually add Element", self)
+        self.addElementWindow = po.AddnewElement(self)
         self.manually_add_element = menubar.addAction(self.addElement)
+
+        self.total_masslistWindow = po.Show_total_Masslist(self)
 
         helpwindow = po.HelpWindow(self)
         helpaction = QtWidgets.QAction("Help", self)
@@ -166,7 +171,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.overallverticallayout.addWidget(menubar)
         self.overallverticallayout.addLayout(self.horizontalLayout)
         self.verticalLayout1.addWidget(self.masslist_widget)
-        self.verticalLayout1.addWidget(self.button)
+        self.verticalLayout1.addWidget(self.button_addnewelem_window)
         self.verticalLayout1.addWidget(self.save_button)
         self.verticalLayout1.addWidget(self.show_total_masslist_button)
 
@@ -202,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def init_UI_file_loaded(self):
-        #add functionality to:
+        #add functionality to all elements :
         #slider
         #first remove old slider and make anew with new labels etc
         self.slider.deleteLater()
@@ -211,10 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
         labels =[ts.astype(dt.datetime).strftime("%Y-%m-%d %H:%M") for ts in self.sp.specs_times]
         self.slider = po.LabeledSlider(minslider, maxslider, 1, orientation=Qt.Horizontal,labels=labels)
         self.verticalLayout2.addWidget(self.slider)
-        # self.slider.setTickPosition(QtWidgets.QSlider.TicksBothSides)
-        # self.slider.setTickInterval(1)
-        # self.label.setText(labels[value])
-        # self.slider.setSingleStep(self.sp.sum_specs.shape[0]-1)
+
         self.slider.sl.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
         # print suggestion list button
         # self.button.clicked.connect(self.printsugg)
@@ -229,20 +231,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.jump_to_compound_input.returnPressed.connect(lambda: self.jump_to_compound(self.jump_to_compound_input.text()))
         #menubar stuff
         # change range action in menubar
-        changemassrangesWindow = po.SelectMassRangeWindow(self)
-        self.changemassranges.triggered.connect(changemassrangesWindow.show)
-        # add new element action in menubar
-        def show_addnewelem_window():
-            addElementWindow = po.AddnewElement(self)
-            addElementWindow.show()
-        self.button.clicked.connect(show_addnewelem_window)
-        def show_totalml_window():
-            addElementWindow = po.Show_total_Masslist(self)
-            addElementWindow.show()
-        self.show_total_masslist_button.clicked.connect(show_totalml_window)
-        self.addElement.triggered.connect(show_addnewelem_window)
+        self.changemassrangesWindow.load(self.ml.names_elements,self.ml.mass_suggestions_numbers)
+        self.changemassranges.triggered.connect(self.changemassrangesWindow.show)
 
-        self.plotsettings_window = po.PlotSettingsWindow(self)
+        # add new element action in menubar
+        self.button_addnewelem_window.clicked.connect(self.addElementWindow.show)
+        self.addElementWindow.load(self.ml.names_elements)
+        self.addElement.triggered.connect(self.addElementWindow.show)
+
+        # add new element button on left bottom
+        self.total_masslistWindow.load(self.ml)
+        self.show_total_masslist_button.clicked.connect(self.total_masslistWindow.show)
+
         self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
         # save to csv in menubar
         self.saveascsv.triggered.connect(lambda: self.save_masslist_to_csv(saveas = True))
