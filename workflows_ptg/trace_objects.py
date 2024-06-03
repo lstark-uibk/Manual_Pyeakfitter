@@ -71,7 +71,7 @@ class Traces():
         print("loading Times")
         self.update_Times()
         print("loading Traces")
-        self.update_Traces(massesToLoad = "none")
+        self.update_Traces(massesToLoad = "all")
     def update_Times_Traces(self,massesToLoad = "none"):
         self.update_Times()
         self.update_Traces(massesToLoad)
@@ -97,9 +97,9 @@ class Traces():
             #     self.Timeindices = np.where(np.full(self.Times.shape, True))[0]
             # self.Times = self.Times - self.timeshift_h * 60*60
 
-            not_avg_times = f["Times"][()]
-            avg_times = f["AvgStickCpsTimes"][()]
-            self.averaging_time_s = round(not_avg_times.shape[0]/avg_times.shape[0])
+            not_avg_times_shape = f["Times"].shape
+            avg_times_shape = f["AvgStickCpsTimes"].shape
+            self.averaging_time_s = round(not_avg_times_shape[0]/avg_times_shape[0])
 
         return self.Times
 
@@ -137,15 +137,15 @@ class Traces():
         with h5py.File(filename, "r") as f:
             if self.hightimeres:
                 print("Loading high time resolution Traces")
-                try:
-                    times = f["Times"][()]
-                    interpolated = self.interpolate(times,self.interpolation_s)
-                    self.Times = interpolated
-                except:
-                    print("Could not load high res time, maybe this is an average-only result file?")
-                    return []
+                # try:
+                #     times = f["Times"][()]
+                #     interpolated = self.interpolate(times,self.interpolation_s)
+                #     self.Times = interpolated
+                # except:
+                #     print("Could not load high res time, maybe this is an average-only result file?")
+                #     return []
                 if self.bg_corr:
-                    if "StickCps" in f:
+                    if "CorrStickCps" in f:
                         try:
                             ds = f["CorrStickCps"]
                             self.bg_corr_status = True
@@ -168,7 +168,7 @@ class Traces():
 
 
                 else:
-                    if "CorrStickCps" in f:
+                    if "StickCps" in f:
                         try:
                             ds = f["StickCps"]
                             self.bg_corr_status = False
@@ -180,7 +180,7 @@ class Traces():
                     else:
                         print("No high time resolution available, is this a average only file?")
                         try:
-                            ds = f["CorrAvgStickCps"]
+                            ds = f["AvgStickCps"]
                             self.bg_corr_status = False
                             self.hightimeres_status = False
                         except:
@@ -207,11 +207,14 @@ class Traces():
                         print("Could not load avg bg corr")
                         self.bg_corr_status = False
                         self.hightimeres_status = False
+            if massesToLoad != "all":
+                Traces = ds[Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
+            else:
+                Traces = ds[Massestoloadindices, :]
 
-            Traces = ds[Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
-            Traces = Traces[0]
-            interpolationed_traces = self.interpolate(Traces, self.interpolation_s)
-            Traces  = interpolationed_traces
+            if self.hightimeres:
+                interpolationed_traces = self.interpolate(Traces, self.interpolation_s)
+                Traces  = interpolationed_traces
 
             return Traces
     def update_Traces(self, massesToLoad = "none"):
@@ -309,7 +312,7 @@ class QlistWidget_Masslist(QListWidget):
                     self.currentmasses = np.append(self.currentmasses, self.masses[i])
                     self.currentcompositions = np.append(self.currentcompositions, [self.compositions[i, :]], axis=0)
 
-            parent.tr.update_Traces(self.currentmasses)
+            # parent.tr.update_Traces(self.currentmasses)
             parent.update_plots()
 
     def check_single(self, index, parent, massesselectedlist):
@@ -318,7 +321,7 @@ class QlistWidget_Masslist(QListWidget):
         self.currentmasses = np.append(self.currentmasses, self.masses[index])
         self.currentcompositions = np.append(self.currentcompositions, [self.compositions[index, :]], axis=0)
 
-        parent.tr.update_Traces(self.currentmasses)
+        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
     def check_multiple(self,lower, upper,parent):
         """
@@ -338,7 +341,7 @@ class QlistWidget_Masslist(QListWidget):
         self.load_on_tick = True
 
 
-        parent.tr.update_Traces(self.currentmasses)
+        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
         
     def uncheck_all(self,parent):
@@ -350,7 +353,7 @@ class QlistWidget_Masslist(QListWidget):
         self.currentmasses = np.array([])
         self.currentcompositions = np.zeros((0, 8))
         
-        parent.tr.update_Traces(self.currentmasses)
+        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
 
     def handle_double_click(self,item,parent):
@@ -486,7 +489,7 @@ class QlistWidget_Selected_Masses(QListWidget):
                         self.selectedmasses = np.append(self.selectedmasses, new_mass)
                         self.selectedcompositions = np.append(self.selectedcompositions, [new_composition], axis=0)
                 # print(self.selectedmasses,self.selectedcompositions)
-                parent.tr.update_Traces(self.selectedmasses)
+                # parent.tr.update_Traces(self.selectedmasses)
                 self.redo_qlist()
                 parent.update_plots()
 
@@ -526,7 +529,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         if mass not in self.selectedmasses:
             self.selectedmasses = np.append(self.selectedmasses, mass)
             self.selectedcompositions = np.append(self.selectedcompositions, [composition], axis=0)
-            parent.tr.update_Traces(self.selectedmasses)
+            # parent.tr.update_Traces(self.selectedmasses)
             self.redo_qlist()
             parent.update_plots()
 
@@ -567,7 +570,7 @@ class QlistWidget_Selected_Masses(QListWidget):
             self.selectedmasses = np.append(self.selectedmasses, for_addition[~mask_duplicates])
             self.selectedcompositions = np.append(self.selectedcompositions, parent.masslist_frame.masslist_widget.compositions[lower_index:upper_index,:][~mask_duplicates,:], axis=0)
 
-        parent.tr.update_Traces(self.selectedmasses)
+        # parent.tr.update_Traces(self.selectedmasses)
         self.redo_qlist()
         parent.update_plots()
     def redo_qlist(self):
@@ -612,7 +615,7 @@ class QlistWidget_Selected_Masses(QListWidget):
             self.selectedcompositions = np.delete(self.selectedcompositions,row,axis=0)
             print(self.selectedmasses,self.selectedcompositions)
             self.redo_qlist()
-            parent.tr.update_Traces(self.selectedmasses)
+            # parent.tr.update_Traces(self.selectedmasses)
             parent.update_plots()
     def check_single(self, index, parent):
         item = self.item(index)
@@ -620,7 +623,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         self.currentmasses = np.append(self.currentmasses, self.masses[index])
         self.currentcompositions = np.append(self.currentcompositions, [self.compositions[index, :]], axis=0)
 
-        parent.tr.update_Traces(self.currentmasses)
+        # parent.tr.update_Traces(self.currentmasses)
         parent.update_plots()
 
 
@@ -674,5 +677,5 @@ def highest_change_signal(data):
     return sum_abs_diff
 
 
-tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5")
-traces = tr.load_Traces("all")
+# tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5")
+# traces = tr.load_Traces("all")

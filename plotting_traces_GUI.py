@@ -58,7 +58,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_Ui_file_not_loaded()
 
         ## to not load file everytime uncomment here
-        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5"
+        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5"
+        self.filename = r"D:\CLOUD16T_PTR3\data\results\_result_highReso.hdf5"
         self.init_basket_objects()
         self.init_UI_file_loaded()
         self.init_plots()
@@ -190,9 +191,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_frame.multiple_check.returnPressed.connect(self.multiple_check_pressed)
 
         # #sorting widgets - give sorting function define sorting object,
-        self.masslist_frame.sort_max.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_max.sort_qlist(self.masslist_frame.masslist_widget,self.tr.load_Traces("all")))
-        self.masslist_frame.sort_rel.sortingbutton.pressed.connect(lambda : self.masslist_frame.sort_rel.sort_qlist(self.masslist_frame.masslist_widget,self.tr.load_Traces("all")))
-        self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses) )
+        self.masslist_frame.sort_max.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_max.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
+        self.masslist_frame.sort_rel.sortingbutton.pressed.connect(lambda : self.masslist_frame.sort_rel.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
+        self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.Traces))
         #menubar stuff
 
         self.plotsettings_window.load(self.tr.hightimeres_status,self.tr.bg_corr_status,self.tr.averaging_time_s)
@@ -340,13 +341,20 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_plots(self):
         self.remove_all_plot_items()
         traces = self.tr.Traces
-        times = self.tr.Times
+        times = self.tr.Times.flatten()
+        masslist = self.tr.MasslistMasses
         #[self.tr.MasslistMasses]
-        masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
+        massestoplot = self.masses_selected_frame.masses_selected_widget.selectedmasses
+        order_massestoplot = np.argsort(massestoplot)
+
         compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
         colors = self.masses_selected_frame.masses_selected_widget.defaultcolorcycle
         currentmass = self.masses_selected_frame.masses_selected_widget.current_clicked_mass
-        for (trace,mass,composition,color) in zip(traces,masses,compositions,colors):
+
+        massestoplotindices = np.where(np.any((np.isclose(masslist[:, None], massestoplot, rtol=1e-5, atol=1e-8)), axis=1))[0]
+        tracestoplot = traces[massestoplotindices][np.argsort(order_massestoplot)]
+
+        for (trace,mass,composition,color) in zip(tracestoplot,massestoplot,compositions,colors):
             if mass==currentmass:
                 width = 3
             else:width = 1

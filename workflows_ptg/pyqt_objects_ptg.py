@@ -220,20 +220,25 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
         checkbox = self.sender()
         if checkbox.isChecked():
             self.parent.tr.hightimeres = True
+            message_box = QMessageBox()
+            message_box.setIcon(QMessageBox.Information)
+            message_box.setText("Loading...")
+            message_box.setWindowTitle("Loading")
+            message_box.setStandardButtons(QMessageBox.NoButton)
+            message_box.show()
         else:
             self.parent.tr.hightimeres = False
-        reply = QMessageBox.question(self, 'Question', 'Loading high time resolution could slow down the program.\nDo you want to continue?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
-            self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
-            self.parent.update_plots()
+
+        self.parent.tr.update_Times_Traces("all")
+        message_box.close()
+        self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
+        self.parent.update_plots()
     def set_raw(self):
         checkbox = self.sender()
         if checkbox.isChecked():
             self.parent.tr.bg_corr = True
         else:
             self.parent.tr.bg_corr = False
-        self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
+        self.parent.tr.update_Times_Traces("all")
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
