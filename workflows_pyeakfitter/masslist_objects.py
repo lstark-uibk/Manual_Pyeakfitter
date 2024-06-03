@@ -329,7 +329,8 @@ class Mass_iso_sugglist():
                 self.suggestions.masses = np.append(self.suggestions.masses,mass)
                 this_compound_name = get_names_out_of_element_numbers(compoundelements)
                 self.suggestions.compound_names = np.append(self.suggestions.compound_names,this_compound_name)
-                print("add mass ", mass, ",", get_names_out_of_element_numbers(compoundelements) ,this_compound_name, "to suggestionslist")
+                compound_name = get_names_out_of_element_numbers(compoundelements)
+                print("add mass ", mass, ",", compound_name ,this_compound_name, "to suggestionslist")
 
                 sortperm = np.argsort(self.suggestions.masses)
                 self.suggestions.masses = self.suggestions.masses[sortperm]
@@ -337,15 +338,8 @@ class Mass_iso_sugglist():
                 self.suggestions.compound_names = self.suggestions.compound_names[sortperm]
 
                 pyqtgraph_objects.redraw_vlines(parent,parent.graphWidget, xlims)
-                highlight_line = pyqtgraph_objects.InfiniteLine_Mass(parent, Pos=mass, Type = "highlight", Label = this_compound_name)
 
-                # parent.ml.suggestions.current_lines.append(highlight_line)
-                parent.graphWidget.addItem(highlight_line)
-                one_time_timer = QtCore.QTimer(parent)
-                one_time_timer.timeout.connect(lambda: parent.graphWidget.removeItem(highlight_line))
-
-                # Start the one-time timer with a 1000ms (1 second) interval
-                one_time_timer.start(3000)
+                pyqtgraph_objects.highlight_mass_vline(parent,mass,compound_name)
 
 
 

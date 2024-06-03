@@ -436,11 +436,16 @@ class MainWindow(QtWidgets.QMainWindow):
             newxlims = (target_mass - xrange/2 , target_mass + xrange/2)
             self.vb.setXRange(*newxlims, padding = 0)
 
+            pyqtgraph_objects.highlight_mass_vline(self, mass)
+
     def jump_to_compound(self,compoundstring):
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
+        compound_name = mo.get_names_out_of_element_numbers(compound)
         self.jump_to_mass(float(mass))
         if not (self.ml.suggestions.element_numbers == compound).all(axis=1).any():
             self.ml.add_suggestion_to_sugglist(self, compound)
+
+        pyqtgraph_objects.highlight_mass_vline(self, mass, compound_name)
 
     def mouse_double_click_on_empty(self, ev):
         # ev pos is the position of the mouseclick in pixel relative to the window, map it onto the view values

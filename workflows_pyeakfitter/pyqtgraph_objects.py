@@ -104,6 +104,19 @@ def redraw_localfit(parent,graph_widget,xlims):
         # #     subfit.setLogMode(None, True)
         # #     parent.sp.current_local_fit.append(subfit)
 
+def highlight_mass_vline(parent,mass,label = ''):
+    pen = pg.mkPen((0,0,0), width=3)
+    highlight_line = InfiniteLine_Mass(parent, Pos=mass, pen= pen,Type="highlight",
+                                                         Label=label)
+    z = 2000
+    highlight_line.setZValue(z)
+    # parent.ml.suggestions.current_lines.append(highlight_line)
+    parent.graphWidget.addItem(highlight_line)
+    one_time_timer = QtCore.QTimer(parent)
+    one_time_timer.timeout.connect(lambda: parent.graphWidget.removeItem(highlight_line))
+
+    # Start the one-time timer with a 1000ms (1 second) interval
+    one_time_timer.start(3000)
 
 def replot_spectra(parent, graphwidget ,plotsetting_show,alterable_plot = True):
     """replot all spectrum lines with the setting given in Mainwindow.plotsettings
