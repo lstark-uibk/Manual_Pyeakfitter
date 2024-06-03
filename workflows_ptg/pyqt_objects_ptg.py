@@ -1,4 +1,5 @@
 import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QRegExpValidator
 import workflows_ptg.trace_objects as to
@@ -179,32 +180,60 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
         self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.parent = parent
 
-        # here I have to use a checkbox not a radiobutton because radionbuttons are exclusively only one on
-        Checkbox = QtWidgets.QCheckBox("Show high time resolution Spectra")
-        Checkbox.setChecked(True)
-        Checkbox.stateChanged.connect(self.set_high_time_res)
-        self.centralLayout.addWidget(Checkbox)
+        self.setCentralWidget(self.centralWidget)
 
-        Checkbox1 = QtWidgets.QCheckBox("Take raw data")
+    def load(self,hightimeres_status,bg_corr_status,averaging_time_s):
+        # here I have to use a checkbox not a radiobutton because radionbuttons are exclusively only one on
+        Checkbox = QtWidgets.QCheckBox("High time resolution")
+        Checkbox.setChecked(False)
+        Checkbox.stateChanged.connect(self.set_high_time_res)
+        self.label_status_high_time_res = QtWidgets.QLabel("")
+        self.centralLayout.addWidget(Checkbox)
+        self.centralLayout.addWidget(self.label_status_high_time_res)
+
+
+        Checkbox1 = QtWidgets.QCheckBox("Background correction")
         Checkbox1.setChecked(True)
         Checkbox1.stateChanged.connect(self.set_raw)
-
+        self.label_status_background = QtWidgets.QLabel("")
         self.centralLayout.addWidget(Checkbox1)
-        self.setCentralWidget(self.centralWidget)
+        self.centralLayout.addWidget(self.label_status_background)
+
+
+        self.change_labels(hightimeres_status,bg_corr_status,averaging_time_s)
+
+    def change_labels(self,hightimeres_status,bg_corr_status,averaging_time_s):
+        if hightimeres_status:
+            curr_loaded_time_res = "High Time Resolution"
+        else: curr_loaded_time_res = f"Averages over {averaging_time_s}s"
+        if bg_corr_status:
+            curr_loaded_bg_corr_status = "Background corrected"
+        else:
+            curr_loaded_bg_corr_status = "No Background correction"
+
+
+
+        self.label_status_high_time_res.setText(f"Currently loaded: {curr_loaded_time_res}")
+        self.label_status_background.setText(f"Currently loaded: {curr_loaded_bg_corr_status}")
 
     def set_high_time_res(self):
         checkbox = self.sender()
         if checkbox.isChecked():
-            self.parent.tr.useaveragesonly = False
+            self.parent.tr.hightimeres = True
         else:
-            self.parent.tr.useaveragesonly = True
-        self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
-        self.parent.update_plots()
+            self.parent.tr.hightimeres = False
+        reply = QMessageBox.question(self, 'Question', 'Loading high time resolution could slow down the program.\nDo you want to continue?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
+            self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
+            self.parent.update_plots()
     def set_raw(self):
         checkbox = self.sender()
         if checkbox.isChecked():
-            self.parent.tr.raw = True
+            self.parent.tr.bg_corr = True
         else:
-            self.parent.tr.raw = False
+            self.parent.tr.bg_corr = False
         self.parent.tr.update_Times_Traces(self.parent.masses_selected_frame.masses_selected_widget.selectedmasses)
+        self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()

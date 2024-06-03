@@ -26,7 +26,7 @@ class Traces():
                                 126.90448,
                                 27.9763
                                ])
-    def __init__(self,Filename,useAveragesOnly=True,startTime = 0, endTime = 0,Raw = True):
+    def __init__(self,Filename,hightimeres=True,startTime = 0, endTime = 0,bg_corr = True):
         self.Times = []
         self.Timeindices = []
         self.MasslistMasses = []
@@ -39,11 +39,20 @@ class Traces():
         self.filename = Filename
         self.starttime = startTime
         self.endtime = endTime
-        self.raw = True
-        self.useaveragesonly = True
-
+        self.bg_corr = True
+        self.hightimeres = False
+        self.bg_corr_status = False
+        self.hightimeres_status = False
+        self.averaging_time_s = 0
+        self.timeshift_h = 1
         self._init_information()
-
+    ##to show always when an entry gets changed
+    # def on_change(self,name,value):
+    #     print("changed",name,value)
+    #
+    # def __setattr__(self, name, value):
+    #     self.__dict__[name] = value
+    #     self.on_change(name,value)
 
 
     def _init_information(self):
@@ -64,21 +73,26 @@ class Traces():
     def update_Times(self):
         with h5py.File(self.filename, "r") as f:
             print("Loading Times:")
-            timeshifthours = 1
-            if self.useaveragesonly:
-                self.Times = f["AvgStickCpsTimes"][()]
-            else:
+            if self.hightimeres:
                 try:
                     self.Times = f["Times"][()]
                 except:
                     print("Could not load high res time, maybe this is an average-only result file?")
-                    return np.array([])
+                    self.Times = f["AvgStickCpsTimes"][()]
+            else:
+                self.Times = f["AvgStickCpsTimes"][()]
+                print("Load Average Times")
+
             if self.starttime < self.endtime:
                 self.Timeindices = np.where((self.Times >= self.starttime) & (self.Times <= self.endtime))[0]
                 self.Times = self.Times[self.Timeindices]
             else:
                 self.Timeindices = np.where(np.full(self.Times.shape, True))[0]
-            self.Times = self.Times - timeshifthours * 60*60
+            self.Times = self.Times - self.timeshift_h * 60*60
+
+            avg_times = f["AvgStickCpsTimes"][()]
+            self.averaging_time_s = round(np.diff(avg_times).mean())
+
         return self.Times
 
     def load_Traces(self, massesToLoad = "none"):
@@ -87,8 +101,8 @@ class Traces():
         :param filename:
         :param massesToLoad: np.array[] if masseToLoad = "all" -> load all masses, if "none" -> no masses
         :param Timeindices:
-        :param useAveragesOnly:
-        :param raw:
+        :param hightimeres:
+        :param bg_corr:
         :return:
         """
         order_input_masses = np.argsort(massesToLoad)
@@ -112,37 +126,80 @@ class Traces():
 
 
         with h5py.File(filename, "r") as f:
-            if self.useaveragesonly:
-                self.Times = f["AvgStickCpsTimes"][()]
-                print("Loading Average Traces")
-                if self.raw:
-                    print("Raw")
-                    ds = f["AvgStickCps"]
-                else:
-                    print("Corrected")
-                    ds = f["CorrAvgStickCps"]
-            else:
+            if self.hightimeres:
                 print("Loading high time resolution Traces")
                 try:
                     self.Times = f["Times"][()]
                 except:
                     print("Could not load high res time, maybe this is an average-only result file?")
                     return []
-                if self.raw:
-                    print("Raw")
+                if self.bg_corr:
                     if "StickCps" in f:
-                        ds = f["StickCps"]
+                        try:
+                            ds = f["CorrStickCps"]
+                            self.bg_corr_status = True
+                            self.hightimeres_status = True
+                        except:
+                            print("Could not load hightimres bg corr")
+                            self.bg_corr_status = False
+                            self.hightimeres_status = False
+
                     else:
                         print("No high time resolution available, is this a average only file?")
-                        ds = f["AvgStickCps"]
+                        try:
+                            ds = f["CorrAvgStickCps"]
+                            self.bg_corr_status = True
+                            self.hightimeres_status = False
+                        except:
+                            print("Could not load high time res bg corr")
+                            self.bg_corr_status = False
+                            self.hightimeres_status = False
+
                 else:
                     if "CorrStickCps" in f:
-                        print("Corrected")
-                        ds = f["CorrStickCps"]
+                        try:
+                            ds = f["StickCps"]
+                            self.bg_corr_status = False
+                            self.hightimeres_status = True
+                        except:
+                            print("Could not load high time res bg not corr")
+                            self.bg_corr_status = False
+                            self.hightimeres_status = False
                     else:
                         print("No high time resolution available, is this a average only file?")
+                        try:
+                            ds = f["CorrAvgStickCps"]
+                            self.bg_corr_status = False
+                            self.hightimeres_status = False
+                        except:
+                            self.bg_corr_status = False
+                            self.hightimeres_status = False
+            else:
+                self.Times = f["AvgStickCpsTimes"][()]
+                print("Loading Average Traces")
+                if self.bg_corr:
+                    try:
                         ds = f["CorrAvgStickCps"]
+                        self.bg_corr_status = True
+                        self.hightimeres_status = False
+                    except:
+                        print("Could not load avg bg not corr")
+                        self.bg_corr_status = False
+                        self.hightimeres_status = False
+                else:
+                    try:
+                        ds = f["AvgStickCps"]
+                        self.bg_corr_status = False
+                        self.hightimeres_status = False
+                    except:
+                        print("Could not load avg bg corr")
+                        self.bg_corr_status = False
+                        self.hightimeres_status = False
+
+
+
             Traces = ds[:, self.Timeindices][Massestoloadindices, :][np.argsort(order_input_masses),:] # gives the Traces in the same order as it was input
+            Traces
             return Traces
     def update_Traces(self, massesToLoad = "none"):
             self.Traces = self.load_Traces(massesToLoad)
@@ -568,8 +625,6 @@ class Sorting():
 
 
 
-# tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5")
-# traces = tr.load_Traces("all")
 
 def robust_scale(data):
     # Calculate the median and interquartile range (IQR) for each signal
@@ -594,3 +649,6 @@ def highest_change_signal(data):
 
     return sum_abs_diff
 
+
+tr = Traces(r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5")
+traces = tr.load_Traces("all")

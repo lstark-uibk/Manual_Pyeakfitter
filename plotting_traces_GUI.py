@@ -57,12 +57,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_loaded = False
         self.init_Ui_file_not_loaded()
 
-        # to not load file everytime uncomment here
-        # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\arctic_runs\2023-11-09to2023-11-12\results\_result_avg.hdf5"
-        # self.init_basket_objects()
-        # self.init_UI_file_loaded()
-        # self.init_plots()
-        # self.file_loaded = True
+        ## to not load file everytime uncomment here
+        self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5"
+        self.init_basket_objects()
+        self.init_UI_file_loaded()
+        self.init_plots()
+        self.file_loaded = True
 
 
 
@@ -90,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.settingsMenubar = menubar.addMenu("Settings")
         self.plotsettings_button = QtWidgets.QAction("Plot Settings", self)
+        self.plotsettings_window = po.PlotSettingsWindow(self)
         self.settingsMenubar.addAction(self.plotsettings_button)
 
         self.overallverticallayout.addWidget(menubar,stretch = 1)
@@ -154,11 +155,11 @@ class MainWindow(QtWidgets.QMainWindow):
                               "background_color": "w",
                               "spectra_width": 1,
                               "show_plots": [True,False,False,False], #plots corresponding to [avg spectrum, min spec, max spect, subspectr]
-                              "avg": False,
-                              "raw": True,
+                              "hightimeres": False,
+                              "bg_corr": True,
                               "font": QtGui.QFont('Calibri', 11),
                               }
-        self.tr = to.Traces(self.filename,useAveragesOnly=self.plot_settings["avg"], Raw=self.plot_settings["raw"])
+        self.tr = to.Traces(self.filename,hightimeres=self.plot_settings["hightimeres"], bg_corr=self.plot_settings["bg_corr"])
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         self.tracesplot = []
@@ -194,7 +195,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_frame.sort_mass.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_mass.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses) )
         #menubar stuff
 
-        self.plotsettings_window = po.PlotSettingsWindow(self)
+        self.plotsettings_window.load(self.tr.hightimeres_status,self.tr.bg_corr_status,self.tr.averaging_time_s)
         self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
 
 
@@ -339,17 +340,18 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_plots(self):
         # set the restrictions on the movement
         self.remove_all_plot_items()
-        traces = self.tr.Traces#[self.tr.MasslistMasses]
+        traces = self.tr.Traces
+        times = self.tr.Times
+        #[self.tr.MasslistMasses]
         masses = self.masses_selected_frame.masses_selected_widget.selectedmasses
         compositions = self.masses_selected_frame.masses_selected_widget.selectedcompositions
         colors = self.masses_selected_frame.masses_selected_widget.defaultcolorcycle
         currentmass = self.masses_selected_frame.masses_selected_widget.current_clicked_mass
         for (trace,mass,composition,color) in zip(traces,masses,compositions,colors):
-            print(mass,color)
             if mass==currentmass:
                 width = 3
             else:width = 1
-            self.tracesplot = self.graphWidget.plot(self.tr.Times, trace,
+            self.tracesplot = self.graphWidget.plot(times, trace,
                                                   pen=pg.mkPen(color, width=width),
                                                   name=f"m/z {round(mass,6)} - {mo.get_names_out_of_element_numbers(composition)}")
             # self.tracesplot.scene().sigMouseClicked.connect(self.mouse_double_click_on_empty)
