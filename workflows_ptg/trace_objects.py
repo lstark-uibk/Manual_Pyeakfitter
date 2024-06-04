@@ -1,16 +1,16 @@
-import numpy as np
-import math
-import h5py
-import datetime
-import random
-import pyqtgraph
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
-import  workflows_pyeakfitter.pyqtgraph_objects as pyqto
-import workflows_pyeakfitter.masslist_objects as mo
+import numpy as np
+import h5py
+import random
+import pyqtgraph
 import re
 from scipy.interpolate import interp1d
+
+import  workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_pyeakfitter.masslist_objects as mo
+
 
 class Traces():
     MasslistElements =["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S","S(34)", "I", "Si"] #iodine, silizium
@@ -260,6 +260,9 @@ class QlistWidget_Masslist(QListWidget):
         self.fixedMasses = np.array([])
         self.fixedcompositions = np.zeros((0, 8))
 
+    def reinit(self,parent, Masses, Compositions):
+        self.__init__(parent, Masses, Compositions)
+
     def mousePressEvent(self, event):
         #override the inbuilt mousepress event to give a signal itemClicked which has the item and the button
         item = self.itemAt(event.pos())
@@ -366,25 +369,6 @@ class QlistWidget_Masslist(QListWidget):
         pass
 
 
-class Sorting():
-    def __init__(self, window,layout, Sorting_function, text):
-        # so a sorting function should map a input corresponding to the masslist (e.g. all trace) to a list sorting the input
-        self.sorting_function = Sorting_function
-        self.sortingbutton = QPushButton(text, window)
-        self.sortingbutton.setGeometry(10, 10, 100, 100)
-        layout.addWidget(self.sortingbutton)
-
-    def sort_qlist(self,qlist,input_to_sortingfunc):
-        masses, compositions = qlist.masses, qlist.compositions
-        #first sort to masses, because traces re sorted to masses
-        sorted_masses = np.argsort(masses)
-        masses = masses[sorted_masses]
-        compositions = compositions[sorted_masses]
-        sorted = self.sorting_function(input_to_sortingfunc)
-        qlist.masses = masses[sorted]
-        qlist.compounds = compositions[sorted]
-        qlist.redo_qlist(qlist.masses,qlist.compounds)
-
 
 class QlistWidget_Selected_Masses(QListWidget):
     itemClicked = pyqtSignal(QListWidgetItem, Qt.MouseButton)
@@ -434,7 +418,8 @@ class QlistWidget_Selected_Masses(QListWidget):
         self.defaultcolorassignment = {}
         self.highlight_this_mass_vline = []
 
-
+    def reinit(self,parent):
+        self.__init__(parent)
     def mousePressEvent(self, event):
         #override the inbuilt mousepress event to give a signal itemClicked which has the item and the button
         item = self.itemAt(event.pos())
@@ -527,9 +512,9 @@ class QlistWidget_Selected_Masses(QListWidget):
         parent.plot_peak_frame.peakmasscolor.set_color(color_this_mass)
         parent.plot_peak_frame.peakmasslabel.setText(str(round(mass,6)))
         xlims = (mass-default_widow,mass+default_widow)
-        # pyqto.replot_spectra(parent,parent.graph_peak_Widget,parent.plot_settings["show_plots"],alterable_plot=False)
+        # pyqtgraph_objects.replot_spectra(parent,parent.graph_peak_Widget,parent.plot_settings["show_plots"],alterable_plot=False)
         parent.vb_peak.setXRange(*xlims)
-        pyqto.redraw_vlines(parent,parent.plot_peak_frame.graph_peak_Widget,xlims,not_changeable=True)
+        pyqtgraph_objects.redraw_vlines(parent,parent.plot_peak_frame.graph_peak_Widget,xlims,not_changeable=True)
         if composition.sum() > 0:
             # if we have any entries in the composition
             vertlinecol = parent.plot_settings["vert_lines_color_masslist"]
@@ -538,7 +523,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         self.highlight_this_mass_vline = pyqtgraph.InfiniteLine(pos=mass, pen = {"color": vertlinecol, "width": 4},angle = 90)
         self.highlight_this_mass_vline.setZValue(2000)
         parent.plot_peak_frame.graph_peak_Widget.addItem(self.highlight_this_mass_vline)
-        pyqto.redraw_localfit(parent,parent.plot_peak_frame.graph_peak_Widget,xlims)
+        pyqtgraph_objects.redraw_localfit(parent,parent.plot_peak_frame.graph_peak_Widget,xlims)
 
 
     def add_index_to_selected_masses(self,lower_index,parent,upper_index = 0):
@@ -631,9 +616,6 @@ class Sorting():
         qlist.masses = masses[sorted]
         qlist.compounds = compositions[sorted]
         qlist.redo_qlist(qlist.masses, qlist.compounds)
-
-
-
 
 
 

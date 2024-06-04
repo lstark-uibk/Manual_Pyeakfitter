@@ -8,6 +8,7 @@ import numpy as np
 import pyqtgraph as pg
 from scipy.ndimage import uniform_filter1d
 
+
 class ColorField(QtWidgets.QWidget):
     def __init__(self, color, parent=None):
         self.color = color
@@ -246,3 +247,5 @@ class PlotSettingsWindow(QtWidgets.QMainWindow):
         self.parent.tr.update_Times_Traces("all")
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
+
+

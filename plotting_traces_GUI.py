@@ -6,9 +6,10 @@ from PyQt5.QtCore import *
 from PyQt5 import QtWidgets, QtGui, QtCore
 import sys
 import workflows_ptg.trace_objects as to
-import workflows_ptg.pyqt_objects_ptg as po
+# import workflows_ptg.pyqt_objects_ptg as po
 import workflows_pyeakfitter.masslist_objects as mo
-import workflows_pyeakfitter.pyqtgraph_objects as pyqto
+import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_pyeakfitter.pyqt_objects as po
 from PyQt5.QtGui import QRegExpValidator
 
 
@@ -54,6 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.threadpool.setMaxThreadCount(1)
         self.filename = None
         self.savefilename = None
+        self.plot_added = False
         self.file_loaded = False
         self.init_Ui_file_not_loaded()
 
@@ -79,7 +81,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # the po.openfile triggers init_UI_file_loaded() and init_plots()
         openfile = QtWidgets.QAction("Open", self)
         openfile.setShortcut("Ctrl+O")
-        openfile.triggered.connect(self.open_file)
+        openfile.triggered.connect(lambda: po.open_file(self))
         self.actionFile.addAction(openfile)
 
 
@@ -91,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.settingsMenubar = menubar.addMenu("Settings")
         self.plotsettings_button = QtWidgets.QAction("Plot Settings", self)
-        self.plotsettings_window = po.PlotSettingsWindow(self)
+        self.plotsettings_window = po.PlotSettingsWindow_PTG(self)
         self.settingsMenubar.addAction(self.plotsettings_button)
 
         self.overallverticallayout.addWidget(menubar,stretch = 1)
@@ -126,19 +128,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.splitter_selected_peak.setSizes([50, 300])
 
 
-    def open_file(self):
-        # show the dialog
-        dialog = QtWidgets.QFileDialog()
-        filepath, filter = dialog.getOpenFileName(None, "Window name", "", "HDF5_files (*.hdf5)")
-        self.filename = filepath
-        # if self.file_loaded:
-        #     print("remove old plot stuff")
-        #     pyqtgraph_objects.remove_all_plot_items(parent)
-        if self.filename:
-            self.init_basket_objects()
-            self.init_UI_file_loaded()
-            self.init_plots()
-            self.file_loaded = True
 
     def init_basket_objects(self):
         #those are the "basket" objects, where the data is in sp = all data that has to do with the spectrum, ml = all data to the masslist
@@ -167,6 +156,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tr = to.Traces(self.filename,hightimeres=self.plot_settings["hightimeres"], bg_corr=self.plot_settings["bg_corr"])
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
+        if self.file_loaded:
+            self.masslist_frame.masslist_widget.reinit([],[])
+            self.masslist_frame.masslist_widget.redo_qlist(self.tr.MasslistMasses, self.tr.MasslistCompositions)
+            self.masses_selected_frame.masses_selected_widget.reinit(self)
         self.tracesplot = []
         self.spectrumplot = []
         self.spectrum_max_plot = []
@@ -206,18 +199,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-    def init_plots(self):
+    def init_plots(self,graphwidget):
         # first big plot
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
-        self.graphWidget.setBackground(self.plot_settings["background_color"])
-        self.graphWidget.setLabel('bottom', "Time")
-        self.graphWidget.setLabel('left', "Signal [cps]")
-        self.graphWidget.setLogMode(y=True)
-        self.graphWidget.showGrid(y = True)
-        self.graphWidget.showGrid(x = True)
-        self.graphWidget.addLegend()
-        self.vb = self.graphWidget.getViewBox()
+        graphwidget.setBackground(self.plot_settings["background_color"])
+        graphwidget.setLabel('bottom', "Time")
+        graphwidget.setLabel('left', "Signal [cps]")
+        graphwidget.setLogMode(y=True)
+        graphwidget.showGrid(y = True)
+        graphwidget.showGrid(x = True)
+        graphwidget.addLegend()
+        self.vb = graphwidget.getViewBox()
         self.vb.autoRange()
         self.vb.setMenuEnabled(False)
         self.vb.setAspectLocked(lock=False)
@@ -240,7 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.vb_peak.setAutoVisible(y=1.0)
         self.vb_peak.setMouseEnabled(x=True, y=False)   # restric movement
         self.vb_peak.enableAutoRange(axis='y', enable=True)
-        pyqto.replot_spectra(self, self.plot_peak_frame.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
+        pyqtgraph_objects.replot_spectra(self, self.plot_peak_frame.graph_peak_Widget, self.plot_settings["show_plots"], alterable_plot=False)
 
 
 
@@ -296,25 +289,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(second)
                 self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses([index], self)
 
-    def remove_all_plot_items(self):
-        """remove all plot_items in the graphWidget
-
-        Parameters
-        ----------
-        parent: object
-            Mainwindow object where the Line are stored
-
-        Returns
-        -------
-        None
-        """
-        # used: https://www.geeksforgeeks.org/pyqtgraph-getting-all-child-items-of-graph-item/
-        for item in self.graphWidget.allChildItems():
-            self.graphWidget.removeItem(item)
 
 
     def update_plots(self):
-        self.remove_all_plot_items()
+        pyqtgraph_objects.remove_all_plot_items(self.graphWidget)
         traces = self.tr.Traces
         times = self.tr.Times.flatten()
         masslist = self.tr.MasslistMasses

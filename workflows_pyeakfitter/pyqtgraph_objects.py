@@ -186,7 +186,7 @@ def remove_all_vlines(parent):
     parent.ml.masslist.current_lines = _remove_plot_items(parent, parent.ml.masslist.current_lines)
     parent.ml.isotopes.current_lines = _remove_plot_items(parent, parent.ml.isotopes.current_lines)
 
-def remove_all_plot_items(parent):
+def remove_all_plot_items(Graphwidget):
     """remove all plot_items in the graphWidget
 
     Parameters
@@ -199,8 +199,8 @@ def remove_all_plot_items(parent):
     None
     """
     # used: https://www.geeksforgeeks.org/pyqtgraph-getting-all-child-items-of-graph-item/
-    for item in parent.graphWidget.allChildItems():
-        parent.graphWidget.removeItem(item)
+    for item in Graphwidget.allChildItems():
+        Graphwidget.removeItem(item)
 def redraw_subspec(parent):
     """redraw the subspectrum line with a new slider value
 
