@@ -15,6 +15,7 @@ import pandas as pd
 import workflows_ptg.trace_objects as to
 import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
 import workflows_pyeakfitter.masslist_objects as mo
+import plotting_traces_GUI as main
 
 #menu functions
 
@@ -100,12 +101,14 @@ def open_file(parent):
         if parent.plot_added:
             print("remove old plot stuff")
             pyqtgraph_objects.remove_all_plot_items(parent.graphWidget)
-        parent.init_basket_objects()
+        errorloading = parent.init_basket_objects()
         try:
-            # parent.init_basket_objects()
             pass
+            # errorloading = parent.init_basket_objects()
         except:
             print(f"Error reading in data")
+            errorloading =True
+        if errorloading:
             msg_box = QtWidgets.QMessageBox()
             msg_box.setIcon(QtWidgets.QMessageBox.Critical)
             msg_box.setWindowTitle("Error")
@@ -370,7 +373,6 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         xlims, ylims = self.parent.vb.viewRange()
         pyqtgraph_objects.redraw_vlines(self.parent,self.parent.graphWidget,xlims)
         print("Go back to default Suggestions")
-        print(self.parent.ml.mass_suggestions_numbers)
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
         for row in range(self.formlayout.count()):
             label_item = self.formlayout.itemAt(row, QtWidgets.QFormLayout.LabelRole)
@@ -837,18 +839,21 @@ class PlotSettingsWindow_PTG(QtWidgets.QMainWindow):
         checkbox = self.sender()
         if checkbox.isChecked():
             self.parent.tr.hightimeres = True
-            message_box = QMessageBox()
-            message_box.setIcon(QMessageBox.Information)
-            message_box.setText("Loading...")
-            message_box.setWindowTitle("Loading")
-            message_box.setStandardButtons(QMessageBox.NoButton)
-            message_box.show()
+
         else:
             self.parent.tr.hightimeres = False
+        def to_worker():
+            text, error = self.parent.tr.update_Times_Traces("all")
 
-        self.parent.tr.update_Times_Traces("all")
-        if checkbox.isChecked():
-            message_box.close()
+        self.thread = QtCore.QThread()
+        self.worker = main.Worker(to_worker)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
     def set_raw(self):
@@ -857,11 +862,11 @@ class PlotSettingsWindow_PTG(QtWidgets.QMainWindow):
             self.parent.tr.bg_corr = True
         else:
             self.parent.tr.bg_corr = False
-        self.parent.tr.update_Times_Traces("all")
+        text,error = self.parent.tr.update_Times_Traces("all")
+        if error:
+            self.parent.loading_promt.show()
+            self.parent.loading_promt.show_error()
+
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
-
-
-
-
 

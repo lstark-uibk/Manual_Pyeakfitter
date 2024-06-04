@@ -469,7 +469,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ml.delete_mass_from_masslist(self, self.ml.currently_hovered.value())
                 xlims, ylims = self.vb.viewRange()
                 pyqtgraph_objects.redraw_localfit(self, self.graphWidget,xlims)
-            print(self.masslist_widget.currentItem())
             if self.masslist_widget.currentItem():
                 # otherwise look in qlist whether there is a item currently selected
                 text = self.masslist_widget.currentItem().text()
