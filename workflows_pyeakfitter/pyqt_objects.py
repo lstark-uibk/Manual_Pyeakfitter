@@ -1,9 +1,9 @@
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QRegExpValidator
 import PyQt5.QtWidgets as QtWidgets
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QWidget, QVBoxLayout, QLabel, QDialog
 import PyQt5.QtCore as QtCore
-from PyQt5.QtCore import QRegExp, Qt
+from PyQt5.QtCore import QRegExp, Qt, QThread, pyqtSignal
 import configparser
 import os
 import sys
@@ -16,6 +16,7 @@ import workflows_ptg.trace_objects as to
 import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
 import workflows_pyeakfitter.masslist_objects as mo
 import plotting_traces_GUI as main
+import time
 
 #menu functions
 
@@ -671,7 +672,7 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.jump_to_mass_layout.addWidget(self.label_jump_mass)
         self.jump_to_mass_layout.addWidget(self.jump_to_mass_input)
 
-        self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+): ")
+        self.label_jump_compound = QtWidgets.QLabel("Select compound (e.g. H3O+, or DMS): ")
         self.jump_to_compound_input = QtWidgets.QLineEdit()
         self.jump_to_compound_status = QtWidgets.QLabel("")
         self.jump_to_compound_layout.addWidget(self.label_jump_compound)
@@ -842,31 +843,33 @@ class PlotSettingsWindow_PTG(QtWidgets.QMainWindow):
 
         else:
             self.parent.tr.hightimeres = False
+
+        self.label_status_high_time_res.setText(f"Loading....")
+
         def to_worker():
-            text, error = self.parent.tr.update_Times_Traces("all")
+            self.parent.tr.update_Times_Traces("all")
+        def continue_this_code():
+            self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
+            self.parent.update_plots()
 
-        self.thread = QtCore.QThread()
-        self.worker = main.Worker(to_worker)
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
+        worker = main.Worker(to_worker)
+        self.parent.threadpool.start(worker)
+        worker.signals.finished.connect(continue_this_code)
 
 
-        self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
-        self.parent.update_plots()
+
+
     def set_raw(self):
         checkbox = self.sender()
         if checkbox.isChecked():
             self.parent.tr.bg_corr = True
         else:
             self.parent.tr.bg_corr = False
-        text,error = self.parent.tr.update_Times_Traces("all")
-        if error:
-            self.parent.loading_promt.show()
-            self.parent.loading_promt.show_error()
 
+        self.label_status_background.setText(f"Loading")
+
+        text,error = self.parent.tr.update_Times_Traces("all")
         self.change_labels(self.parent.tr.hightimeres_status,self.parent.tr.bg_corr_status,self.parent.tr.averaging_time_s)
         self.parent.update_plots()
+
 

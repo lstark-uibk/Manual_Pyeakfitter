@@ -7,8 +7,8 @@ import random
 import pyqtgraph
 import re
 from scipy.interpolate import interp1d
-
-import  workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
+import workflows_ptg.masslist_library as masslist_library
+import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
 import workflows_pyeakfitter.masslist_objects as mo
 
 
@@ -491,20 +491,24 @@ class QlistWidget_Selected_Masses(QListWidget):
                 parent.update_plots()
 
     def add_compound(self,text,parent):
-        #first test with reg exp whether it is a compound name
-        regex = re.compile(r'^(([a-zA-Z]+)(\d+)?)+\+$')
-        match = regex.match(text)
-        if match:
-            mass, elementnumber = mo.get_element_numbers_out_of_names(text)
-            print(mass,elementnumber)
+        mass = 0
+        if text in masslist_library.masslibrary:
+            mass, elementnumber = masslist_library.masslibrary[text]
             elementnumber = elementnumber[0:8]
-            if mass in parent.masslist_frame.masslist_widget.masses:
-                #second test whether we have it in masslist
-                self.add_one_mass(mass, np.array(elementnumber), parent)
-                parent.masslist_frame.jump_to_compound_status.setText("")
-            else:
-                parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
-        else: parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
+        else:
+            # first test with reg exp whether it is a compound name
+            regex = re.compile(r'^(([a-zA-Z]+)(\d+)?)+\+$')
+            match = regex.match(text)
+            if match:
+                mass, elementnumber = mo.get_element_numbers_out_of_names(text)
+                elementnumber = elementnumber[0:8]
+        if mass in parent.masslist_frame.masslist_widget.masses:
+            # second test whether we have it in masslist
+            self.add_one_mass(mass, np.array(elementnumber), parent)
+            parent.masslist_frame.jump_to_compound_status.setText("")
+        else:
+            parent.masslist_frame.jump_to_compound_status.setText("Not in masslist")
+
     def add_item_to_selected_masses(self,item,button,parent):
         if button == 1:#left click
             row = int(parent.masslist_frame.masslist_widget.row(item))

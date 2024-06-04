@@ -13,7 +13,8 @@ import workflows_pyeakfitter.pyqt_objects as po
 from PyQt5.QtGui import QRegExpValidator
 
 
-
+class WorkerSignals(QObject):
+    finished = pyqtSignal()
 class Worker(QRunnable):
     '''
     Worker thread
@@ -27,11 +28,13 @@ class Worker(QRunnable):
     :param kwargs: Keywords to pass to the callback function
 
     '''
+    finished = pyqtSignal()
 
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
 
         # Store constructor arguments (re-used for processing)
+        self.signals = WorkerSignals()
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
@@ -42,6 +45,7 @@ class Worker(QRunnable):
         Initialise the runner function with passed args, kwargs.
         '''
         self.fn(*self.args, **self.kwargs)
+        self.signals.finished.emit()
 
 
 
