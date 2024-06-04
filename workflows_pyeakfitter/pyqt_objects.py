@@ -100,8 +100,10 @@ def open_file(parent):
         if parent.plot_added:
             print("remove old plot stuff")
             pyqtgraph_objects.remove_all_plot_items(parent.graphWidget)
+        parent.init_basket_objects()
         try:
-            parent.init_basket_objects()
+            # parent.init_basket_objects()
+            pass
         except:
             print(f"Error reading in data")
             msg_box = QtWidgets.QMessageBox()
@@ -110,9 +112,10 @@ def open_file(parent):
             msg_box.setText(".h5 File not readable, try it maybe with an average only file.")
             msg_box.exec_()
             open_file(parent)
-        parent.file_loaded = True
         parent.init_UI_file_loaded()
         parent.init_plots(parent.graphWidget)
+        parent.file_loaded = True
+
 
 
 class QHSeparationLine(QtWidgets.QFrame):
@@ -807,6 +810,14 @@ class PlotSettingsWindow_PTG(QtWidgets.QMainWindow):
 
 
         self.change_labels(hightimeres_status,bg_corr_status,averaging_time_s)
+
+    def reload(self,hightimeres_status,bg_corr_status,averaging_time_s):
+        # delete the widgets in the layout
+        for i in reversed(range(self.centralLayout.count())):
+            self.centralLayout.itemAt(i).widget().deleteLater()
+        self.load(hightimeres_status,bg_corr_status,averaging_time_s)
+
+
 
     def change_labels(self,hightimeres_status,bg_corr_status,averaging_time_s):
         if hightimeres_status:

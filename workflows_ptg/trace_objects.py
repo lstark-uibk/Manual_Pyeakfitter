@@ -103,12 +103,21 @@ class Traces():
                     print("Could not load high res time, maybe this is an average-only result file?")
                     self.Times = f["AvgStickCpsTimes"][()]
             else:
-                self.Times = f["AvgStickCpsTimes"][()]
-                print("Load Average Times")
+                try:
+                    times = f["AvgStickCpsTimes"][()]
+                    print("Load Average Times")
+                    diffs = np.diff(times)
+                    Q1 = np.percentile(diffs, 25)
+                    Q3 = np.percentile(diffs, 75)
 
-            not_avg_times_shape = f["Times"].shape
-            avg_times_shape = f["AvgStickCpsTimes"].shape
-            self.averaging_time_s = round(not_avg_times_shape[0]/avg_times_shape[0])
+                    lower_bound = Q1 - 1.5 * (Q3 - Q1)
+                    upper_bound = Q1 + 1.5 * (Q3 - Q1)
+                    # the averaging time is the mean difference between timestamps (excludung outliers)
+                    self.averaging_time_s = round(diffs[(diffs >= lower_bound) & (diffs <= upper_bound)].mean())
+                    self.Times = times
+                except:
+                    print("Load Average Times also failed")
+
 
         return self.Times
 
@@ -260,8 +269,6 @@ class QlistWidget_Masslist(QListWidget):
         self.fixedMasses = np.array([])
         self.fixedcompositions = np.zeros((0, 8))
 
-    def reinit(self,parent, Masses, Compositions):
-        self.__init__(parent, Masses, Compositions)
 
     def mousePressEvent(self, event):
         #override the inbuilt mousepress event to give a signal itemClicked which has the item and the button
@@ -291,6 +298,7 @@ class QlistWidget_Masslist(QListWidget):
             # item.setFlags(item.flags() | 1)  # Add the Qt.ItemIsUserCheckable flag
             # item.setCheckState(0)  # 0 for Unchecked, 2 for Checked
             self.addItem(item)
+        print("redid")
     def jump_to_mass(self, event, parent):
         borders = event.split("-")
         print(borders)

@@ -157,7 +157,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sp = mo.Spectrum(self.filename)
         self.ml = mo.read_masslist_from_hdf5_produce_iso_sugg(self.filename)
         if self.file_loaded:
-            self.masslist_frame.masslist_widget.reinit([],[])
             self.masslist_frame.masslist_widget.redo_qlist(self.tr.MasslistMasses, self.tr.MasslistCompositions)
             self.masses_selected_frame.masses_selected_widget.reinit(self)
         self.tracesplot = []
@@ -193,8 +192,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.masslist_frame.sort_primary_ions.sortingbutton.pressed.connect(lambda: self.masslist_frame.sort_primary_ions.sort_qlist(self.masslist_frame.masslist_widget,self.tr.MasslistMasses))
 
         #menubar stuff
-
-        self.plotsettings_window.load(self.tr.hightimeres_status,self.tr.bg_corr_status,self.tr.averaging_time_s)
+        if self.file_loaded:
+            self.plotsettings_window.reload(self.tr.hightimeres_status, self.tr.bg_corr_status, self.tr.averaging_time_s)
+        else:
+            self.plotsettings_window.load(self.tr.hightimeres_status,self.tr.bg_corr_status,self.tr.averaging_time_s)
         self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
 
 
