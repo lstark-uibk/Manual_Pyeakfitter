@@ -637,7 +637,6 @@ class Spectrum():
 
         '''
 
-        print("recalculate local fit")
         isotopes_range = ml.isotopes_range_back  # how many isotopes back we want to include
         margin = 0.5
         massaxis_range = [range[0] - isotopes_range - margin,

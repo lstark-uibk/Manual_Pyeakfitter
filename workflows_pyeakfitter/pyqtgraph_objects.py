@@ -95,7 +95,6 @@ def redraw_localfit(parent,graph_widget,xlims):
             parent.sp.current_local_fit = localfit
             parent.sp.current_local_fit_init = True
         else:
-            print("Redo local fit data")
             parent.sp.current_local_fit.setData(fitmassaxis, fitspectrum)
             parent.sp.current_local_fit_masses = masses_influencing_localfit
         # localfit.setLogMode(None, True)
@@ -297,7 +296,7 @@ class InfiniteLine_Mass(pg.InfiniteLine):
         font.setPointSize(12)
         self.label.textItem.setFont(font)
         self.label.setColor([0,0,0])
-        print(f"Make {self.type} line at {self.position} with label {self.label.format}")
+        # print(f"Make {self.type} line at {self.position} with label {self.label.format}")
 
 
     def hoverEvent(self, ev):
