@@ -598,8 +598,6 @@ class Spectrum():
             extended_list = np.concatenate((peakshape_massaxis_this_mass, additional_elements))
             peakshape_massaxis_this_mass = extended_list
 
-        print(peakshape_massaxis_this_mass,peakshape_this, massaxis_this_zoom)
-        print(peakshape_massaxis_this_mass.shape,peakshape_this.shape, massaxis_this_zoom.shape)
         peakshape_interpolated = np.interp(massaxis_this_zoom, peakshape_massaxis_this_mass, peakshape_this,left= 0, right= 0)
 
         return massaxis_this_zoom, peakshape_interpolated

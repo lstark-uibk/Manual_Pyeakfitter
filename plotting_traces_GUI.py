@@ -277,7 +277,6 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"Input: {self.masslist_frame.multiple_check.text()}")
         input = self.masslist_frame.multiple_check.text()
         first,sep,second = input.rpartition('-')
-        print(first,second)
         if first:
             lower, upper = first,second
             lower,upper = int(lower)-1,int(upper)
@@ -285,13 +284,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 lower = 0
             upper = upper
             if lower < upper:
-                print(lower, upper)
                 self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses(lower,self,upper_index=upper)
         else:
             # if first is empty -> only one input
             index = int(second) - 1
             if index >= 0:
-                print(second)
                 self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses([index], self)
 
 

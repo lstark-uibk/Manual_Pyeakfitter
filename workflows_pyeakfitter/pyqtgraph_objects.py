@@ -26,7 +26,7 @@ def _redraw_vline(parent, graphwidget, xlims, not_changeable= False, type = "mas
             if item.value() not in new_xlim_current_masses:
                 graphwidget.removeItem(item)
                 massisosugg.current_lines.remove(item)
-    print(f"new_xlim_current_masses {new_xlim_current_masses}")
+    print(f"current {type} masses in view {new_xlim_current_masses}")
     # then add masses if they are not already in the view field
     for mass in new_xlim_current_masses:
         if mass not in [item.value() for item in massisosugg.current_lines]:

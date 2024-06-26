@@ -325,7 +325,6 @@ class QlistWidget_Masslist(QListWidget):
         print("redid")
     def jump_to_mass(self, event, parent):
         borders = event.split("-")
-        print(borders)
         if len(borders) == 1:
             mass = float(event)
             mass_difference = np.abs(self.masses - mass)
@@ -461,7 +460,6 @@ class QlistWidget_Selected_Masses(QListWidget):
 
     def add_mass_to_selected_masses(self,event,parent):
         borders = event.split("-")
-        print(borders)
         if len(borders) == 1:
             mass = float(event)
             mass_difference = np.abs(self.masses - mass)

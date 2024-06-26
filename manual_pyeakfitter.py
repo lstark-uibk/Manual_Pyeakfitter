@@ -72,6 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.verticalLayout1 = QtWidgets.QVBoxLayout()  #layout on the left with the masslist, and other stuff
         self.verticalLayout2 = QtWidgets.QVBoxLayout()  #laout on the right with the graph
+        self.sliderreplotlayout = QtWidgets.QHBoxLayout()
         self.jump_to_mass_layout = QtWidgets.QHBoxLayout()
         self.jump_to_compound_layout = QtWidgets.QHBoxLayout()
 
@@ -85,14 +86,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # plot widget for the verticalLayout2
         self.graphWidget = pg.PlotWidget()
-
-
         self.verticalLayout2.addWidget(self.graphWidget)
+        self.verticalLayout2.addLayout(self.sliderreplotlayout)
 
-        # self.slider = QtWidgets.QSlider(Qt.Horizontal)
-        self.slider = po.LabeledSlider(0,1,1)
-        self.slider.setFocusPolicy(Qt.StrongFocus)
-        self.verticalLayout2.addWidget(self.slider)
+
 
         # other widgets for the verticalLayout1
         # self.button = QtWidgets.QPushButton("Print suggestions in view range")
@@ -207,13 +204,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_UI_file_loaded(self):
         #add functionality to all elements :
         #slider
-        #first remove old slider and make anew with new labels etc
-        self.slider.deleteLater()
         minslider = 0
         maxslider = self.sp.sum_specs.shape[0]-1
         labels =[ts.astype(dt.datetime).strftime("%Y-%m-%d %H:%M") for ts in self.sp.specs_times]
         self.slider = po.LabeledSlider(minslider, maxslider, 1, orientation=Qt.Horizontal,labels=labels)
-        self.verticalLayout2.addWidget(self.slider)
+        self.replotbutton = QtWidgets.QPushButton("Reload Plots")
+        self.sliderreplotlayout.addWidget(self.slider)
+        self.sliderreplotlayout.addWidget(self.replotbutton)
+        self.sliderreplotlayout.setStretch(0, 10)
+        self.sliderreplotlayout.setStretch(1,1)
+        self.replotbutton.pressed.connect(self.replot_everything)
+
 
         self.slider.sl.valueChanged.connect(lambda: pyqtgraph_objects.redraw_subspec(self))
         # print suggestion list button
@@ -284,17 +285,19 @@ class MainWindow(QtWidgets.QMainWindow):
         # to signals and slots: https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.htm#:~:text=Each%20PyQt%20widget%2C%20which%20is,%27%20to%20a%20%27slot%27.
         self.vb.sigXRangeChanged.connect(lambda: self.on_xlims_changed(self.vb))
 
-
-
+    def replot_everything(self):
+        self.graphWidget.clear()
+        print("replot everything")
+        pyqtgraph_objects.replot_spectra(self,self.graphWidget,self.plot_settings["show_plots"])
+        self.sp.current_local_fit_init = False
+        xlims, ylims = self.vb.viewRange()
+        shiftby1 = (xlims[0]-1,xlims[1]-1)
+        self.graphWidget.setXRange(*shiftby1)
+        self.graphWidget.setXRange(*xlims)
     def on_xlims_changed(self, viewbox):
-        # for a similar examples look at:
-        # import pyqtgraph.examples
-        # pyqtgraph.examples.run()
-        # InfiniteLine Example
         #documentation https://pyqtgraph.readthedocs.io/en/latest/api_reference/graphicsItems/infiniteline.html
 
         xlims, ylims = viewbox.viewRange()
-        # print("xlims changed ", xlims, np.diff(xlims))
 
         if np.diff(xlims) > 1.1:
             pyqtgraph_objects.remove_all_vlines(self)
@@ -305,10 +308,8 @@ class MainWindow(QtWidgets.QMainWindow):
             pyqtgraph_objects.redraw_vlines(self, self.graphWidget, xlims)
         if np.diff(xlims) < 0.7:
             # only if we are shure, that we have the influence of only one peak we draw the local fit
-            def to_worker():
-                pyqtgraph_objects.redraw_localfit(self,self.graphWidget,xlims)
-            worker = Worker(to_worker)
-            self.threadpool.start(worker)
+            pyqtgraph_objects.redraw_localfit(self,self.graphWidget,xlims)
+
 
     def importmasslist_fn(self):
         print("Import")
