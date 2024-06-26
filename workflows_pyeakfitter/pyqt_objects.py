@@ -86,7 +86,6 @@ def open_file(parent):
     # show the dialog
     co = Config()
     filepath_lastreadin = co.read_from_config("filepaths","filepath_lastreadin")
-    print(filepath_lastreadin)
     try:
         dialog = QtWidgets.QFileDialog()
         filepath, filter = dialog.getOpenFileName(None, "Window name", filepath_lastreadin, "HDF5_files (*.hdf5)")

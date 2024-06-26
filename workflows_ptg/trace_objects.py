@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QDateTime, Qt, pyqtSignal
-from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton, QApplication
+from PyQt5.QtWidgets import QListWidgetItem, QListWidget, QPushButton
 from PyQt5.QtGui import QColor
 import numpy as np
 import h5py
@@ -81,7 +81,7 @@ class Traces():
         with h5py.File(self.filename, "r") as f:
             from_timestamp_vec = np.vectorize(lambda x: QDateTime.fromSecsSinceEpoch(int(round(x))))
             # self.Times = from_timestamp_vec(self.Times)
-            print("trace_objects.Traces: Loading Masslist Information")
+            print("Loading Masslist Information")
             #check time ordering
             self.MasslistMasses = f["MassList"][()]
             self.MasslistCompositions = f["ElementalCompositions"][()]
@@ -94,7 +94,7 @@ class Traces():
         return text, error
     def update_Times(self):
         with h5py.File(self.filename, "r") as f:
-            print("trace_objects.Traces: Loading Times:")
+            print("Loading Times:")
             if self.hightimeres:
                 if "Times" in f:
                     try:
@@ -102,15 +102,15 @@ class Traces():
                         interpolated = self.interpolate(times,self.interpolation_s)
                         self.Times = interpolated
                     except:
-                        print("trace_objects.Traces: Could not read high res time \nIs this file corrupt?")
+                        print("Could not read high res time \nIs this file corrupt?")
                         self.hightimeres = False
                 else:
-                    print("trace_objects.Traces: Could not find high time res Time in file. Maybe this is an average-only result file?")
+                    print("Could not find high time res Time in file. Maybe this is an average-only result file?")
                     self.hightimeres = False
             if not self.hightimeres:
                 try:
                     times = f["AvgStickCpsTimes"][()]
-                    print("trace_objects.Traces: Loaded Average Times")
+                    print("Loaded Average Times")
                     diffs = np.diff(times)
                     Q1 = np.percentile(diffs, 25)
                     Q3 = np.percentile(diffs, 75)
@@ -121,7 +121,7 @@ class Traces():
                     self.averaging_time_s = round(diffs[(diffs >= lower_bound) & (diffs <= upper_bound)].mean())
                     self.Times = times
                 except:
-                    print("trace_objects.Traces: Load Average Times also failed")
+                    print("Load Average Times also failed")
 
 
         return self.Times
@@ -146,23 +146,23 @@ class Traces():
             Massestoloadindices = np.where(np.any((np.isclose(self.MasslistMasses[:, None], massesToLoad , rtol=1e-5, atol=1e-8)),axis=1))[0]
             if isinstance(massesToLoad,(float,int)):
                 Massestoloadindices = int(Massestoloadindices)
-            print(f"trace_objects.Traces: Loading Masses {massesToLoad} at indices, {Massestoloadindices}")
+            print(f"Loading Masses {massesToLoad} at indices, {Massestoloadindices}")
         else:
             if massesToLoad == "none":
-                print("trace_objects.Traces: No Masses to load selected")
+                print("No Masses to load selected")
                 return np.array([])
             elif massesToLoad == "all":
-                print("trace_objects.Traces: Loading all Masses")
+                print("Loading all Masses")
                 Massestoloadindices = np.where(np.full(self.MasslistMasses.shape, True))[0]
             else:
-                print("trace_objects.Traces: Unknow Masses to Load")
+                print("Unknow Masses to Load")
                 return np.array([])
 
 
         with h5py.File(filename, "r") as f:
             load_traces = True # this is to toggle when we already loaded high time resolution traces
             if self.hightimeres:
-                print("trace_objects.Traces: Loading high time resolution Traces")
+                print("Loading high time resolution Traces")
                 if self.bg_corr:
                     if self.hightimeresTraces.size == 0:
                         if "CorrStickCps" in f:
@@ -170,13 +170,13 @@ class Traces():
                                 ds = f["CorrStickCps"]
                                 self.bg_corr_status = True
                                 self.hightimeres_status = True
-                                output_text ="trace_objects.Traces: Loaded hightimres bg corr Traces"
+                                output_text ="Loaded hightimres bg corr Traces"
                             except:
-                                print("trace_objects.Traces: Could not load hightimres bg corr, is the file corrupt?\nTry loading average...")
+                                print("Could not load hightimres bg corr, is the file corrupt?\nTry loading average...")
                                 self.hightimeres = False
 
                         else:
-                            print("trace_objects.Traces: No hightimres bg corr available, is this a average only file? \nTry loading average...")
+                            print("No hightimres bg corr available, is this a average only file? \nTry loading average...")
                             self.hightimeres = False
 
                     else:
@@ -487,7 +487,6 @@ class QlistWidget_Selected_Masses(QListWidget):
 
     def add_mass_to_selected_masses(self,event,parent):
         borders = event.split("-")
-        print(borders)
         if len(borders) == 1:
             mass = float(event)
             mass_difference = np.abs(self.masses - mass)

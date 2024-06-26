@@ -39,11 +39,13 @@ def make_isotope(mass, element_composition, Nr_isotopes, nr_elements_masslistpro
 
     Returns
     -------
-        array: (1,Nr_isotopes)
+    list of np.arrays:
+        1st array: (1,Nr_isotopes)
             Masses of isotopes
-        array: (1,Nr_isotopes,nr_elements_masslistproposed)
+        2nd array: (1,Nr_isotopes,nr_elements_masslistproposed)
             Element numbers of the isotopes
-
+    dict:
+        keys: "IsotopicAbundance" : array: (1,Nr_isotopes) with isotopic abundances
 
     to add a new Isotope add another block of the following:
     1) change Nr_isotopes in Masslist() to Nr_isotopes+1
@@ -635,7 +637,6 @@ class Spectrum():
 
         '''
 
-        print("recalculate local fit")
         isotopes_range = ml.isotopes_range_back  # how many isotopes back we want to include
         margin = 0.5
         massaxis_range = [range[0] - isotopes_range - margin,
@@ -671,7 +672,6 @@ class Spectrum():
         # ml.isotopes.mass_coefficients[masslist_mask] = coefficients
         local_fit = np.sum(A*coefficients, axis = 1)
         return massaxis_in_range, local_fit,coefficients, A
-
 
 
 

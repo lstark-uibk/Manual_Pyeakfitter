@@ -59,7 +59,7 @@ class Worker(QRunnable):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        print("plotting_traces_GUI.MainWindow: Initializing Window")
+        print("Initializing Window")
         self.setWindowTitle("PlottingTracesGui")
         self.setGeometry(300, 100, 1500, 800)
         self.threadpool = QThreadPool()
@@ -68,17 +68,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.savefilename = None
         self.plot_added = False
         self.file_loaded = False
-        self.logger = logging.getLogger(__name__)
         self.init_Ui_file_not_loaded()
 
         ## to not load file everytime uncomment here
         # self.filename = r"D:\Uniarbeit 23_11_09\CERN\CLOUD16\2023-11-09\results\_result.hdf5"
         # self.filename = r"D:\CLOUD16T_PTR3\data\results\_result_highReso.hdf5"
-        # self.filename = "C:\\Users\\Umwelt\\PycharmProjects\\Manual_Pyeakfitter\\_resultfile_example.hdf5"
-        #
         # self.init_basket_objects()
         # self.init_UI_file_loaded()
-        # self.init_plots(self.graphWidget)
+        # self.init_plots()
         # self.file_loaded = True
 
 
@@ -284,10 +281,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def multiple_check_pressed(self):
-        print(f"User input: {self.masslist_frame.multiple_check.text()}")
+        print(f"Input: {self.masslist_frame.multiple_check.text()}")
         input = self.masslist_frame.multiple_check.text()
         first,sep,second = input.rpartition('-')
-        print(first,second)
         if first:
             lower, upper = first,second
             lower,upper = int(lower)-1,int(upper)
@@ -295,13 +291,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 lower = 0
             upper = upper
             if lower < upper:
-                print(lower, upper)
                 self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses(lower,self,upper_index=upper)
         else:
             # if first is empty -> only one input
             index = int(second) - 1
             if index >= 0:
-                print(second)
                 self.masses_selected_frame.masses_selected_widget.add_index_to_selected_masses([index], self)
 
 
