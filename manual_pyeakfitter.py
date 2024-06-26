@@ -11,7 +11,7 @@ import workflows_pyeakfitter.pyqt_objects as po
 import datetime as dt
 import configparser
 import re
-
+print("test")
 class Worker(QRunnable):
     '''
     Worker thread
