@@ -768,52 +768,55 @@ def get_element_numbers_out_of_names(namestring):
 
 
     '''
+    # first take out Si to not change exchange with S&I
+    si_pattern = r'Si(\d+)?'
+    numbers_si = re.findall(si_pattern, namestring)
+    numbers_si = [1 if match == '' else int(match) for match in numbers_si]
+    number_si = 0
+    for x in numbers_si:
+        number_si += x
+
+    namestring = re.sub(si_pattern, "",namestring) # remove Si_x out of namestring
     namestring = namestring.lower()
+
+    # if the namestring has + make it an ion
     ion = False
     if "+" in namestring:
         ion = True
         namestring = namestring.replace("+","")
 
-    charlist = re.split(r'([a-zA-Z]\d+)|([a-zA-Z](?=[a-zA-Z]))', namestring)
-    charlist = np.array([part for part in charlist if part],dtype="str")
+    # prepare the namestring as a list of element and elementnumbers (eg. c3c(13)c to elements = [c,c(13)], numbers = [4,1]
+    el_iso_pattern = r'([a-zA-Z](\(\d+\))?)(\d+)?'
+    pattern_find = re.findall(el_iso_pattern, namestring) # gives out a list of tuples the first entry of the tuple is the element, the second the isotopenr and the third the number of this element
+    el_numb_duplicates = [(entry[0],int(entry[2])) if entry[2] else (entry[0],1) for entry in pattern_find]
+    el_numb = {}
+    for entry in el_numb_duplicates:
+        element,number = entry
+        if element not in el_numb:
+            el_numb[element] = number
+        else:
+            el_numb[element] += number
+    elements = np.array(list(el_numb.keys()))
+    numbers = np.array(list(el_numb.values()))
 
-    elements = np.array([""]*charlist.size, dtype = "str")
-    numbers = np.zeros(charlist.size)
-    for index, el_num in enumerate(charlist):
-        if re.match(r'[a-zA-Z]\d', el_num):  # Character followed by a number
-            splitted = re.split(r'([a-zA-Z])(\d+)',el_num)
-            splitted = [part for part in splitted if part]
-            element, number = splitted
-            number = int(number)
-            if element not in elements: #if the element is not already considered
-                elements[index] = element
-                numbers[index] = number
-            else: #takes care of double writing eg C7H8NH4+
-                numbers[element == elements] += number
-        else:  # Character followed by another character
-            if el_num not in elements: #if the element is not already considered
-                elements[index] = el_num
-                numbers[index] = 1
-            else: #takes care of double writing eg C7H8NH4+
-                numbers[el_num == elements] += 1
-
-    if ion:
-        elements = np.append(elements,"H+")
-        numbers = np.append(numbers,1)
-        number_H_mask = np.array([x.lower() for x in elements], dtype='str') == "h"
-
-        if numbers[number_H_mask] > 0: # if the H number is more than 0
-            numbers[number_H_mask] -= 1
-
-    elementsinstring_lower = np.array([x.lower() for x in elements], dtype = 'str')
-
+    # make the array out of the names Mass_iso_sugglist.names_elements
     names_elements = Mass_iso_sugglist.names_elements
+    names_elements = np.array([x.lower() for x in names_elements])
     compound_array = np.array([0] * len(names_elements))
     for index,element in enumerate(names_elements):
         #make it lower, so that we have more freedom in writing
-        element_lower = element.lower()
-        if np.any(element_lower == elementsinstring_lower):
-            compound_array[index] = numbers[element_lower == elementsinstring_lower][0]
+        if np.any(element == elements):
+            compound_array[index] = numbers[element == elements][0]
+
+    # if there is a Si add this
+    compound_array[names_elements == "si"] = number_si
+
+    # if there is + remove one H and add a H+
+    # add a H+ and delete a H if it is ion
+    if ion:
+        compound_array[names_elements == "h"] = compound_array[names_elements == "h"] -1
+        compound_array[names_elements == "h+"] = compound_array[names_elements == "h+"] + 1
+
 
     mass = np.sum(compound_array*Mass_iso_sugglist.masses_elements)
     return mass, compound_array
