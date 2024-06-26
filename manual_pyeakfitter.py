@@ -11,7 +11,8 @@ import workflows_pyeakfitter.pyqt_objects as po
 import datetime as dt
 import configparser
 import re
-
+print("test")
+print("test2")
 class Worker(QRunnable):
     '''
     Worker thread
@@ -151,9 +152,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.changemassrangesWindow = po.SelectMassRangeWindow(self)
         self.settingsMenubar.addAction(self.changemassranges)
 
-        self.addElement = QtWidgets.QAction("Manually add Element", self)
+        self.addElement = QtWidgets.QAction("Manually add Compound", self)
         self.addElementWindow = po.AddnewElement(self)
-        self.manually_add_element = menubar.addAction(self.addElement)
+        self.manually_add_element = self.settingsMenubar.addAction(self.addElement)
 
         self.total_masslistWindow = po.Show_total_Masslist(self)
 
@@ -239,7 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # add new element button on left bottom
         self.total_masslistWindow.load(self.ml)
-        self.show_total_masslist_button.clicked.connect(self.total_masslistWindow.show)
+        self.show_total_masslist_button.clicked.connect(lambda: self.total_masslistWindow.show(self.ml))
 
         self.plotsettings_button.triggered.connect(self.plotsettings_window.show)
         # save to csv in menubar

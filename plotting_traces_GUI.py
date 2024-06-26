@@ -11,6 +11,13 @@ import workflows_pyeakfitter.masslist_objects as mo
 import workflows_pyeakfitter.pyqtgraph_objects as pyqtgraph_objects
 import workflows_pyeakfitter.pyqt_objects as po
 from PyQt5.QtGui import QRegExpValidator
+import logging
+
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(filename)s - %(funcName)s - Line %(lineno)d: %(message)s'
+)
+
 
 
 class WorkerSignals(QObject):
@@ -318,6 +325,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                                   name=f"m/z {round(mass,6)} - {mo.get_names_out_of_element_numbers(composition)}")
             # self.tracesplot.scene().sigMouseClicked.connect(self.mouse_double_click_on_empty)
         self.vb.autoRange()
+        print(f"plotting_traces_GUI.MainWindow.update_plots: Redid Plots with masses: {massestoplot}")
 
 
 

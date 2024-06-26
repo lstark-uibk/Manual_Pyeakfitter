@@ -98,13 +98,11 @@ def open_file(parent):
     print(f"Try to read in data from {filepath}")
     parent.filename = filepath
     if filepath:
-        if parent.plot_added:
-            print("remove old plot stuff")
-            pyqtgraph_objects.remove_all_plot_items(parent.graphWidget)
-        errorloading = parent.init_basket_objects()
+        print("remove old plot stuff")
+        pyqtgraph_objects.remove_all_plot_items(parent.graphWidget)
+        # pyqtgraph_objects.remove_all_plot_items(parent.plot_peak_frame.graph_peak_Widget)
         try:
-            pass
-            # errorloading = parent.init_basket_objects()
+            errorloading = parent.init_basket_objects()
         except:
             print(f"Error reading in data")
             errorloading =True
@@ -198,8 +196,14 @@ class AddnewElement(QtWidgets.QMainWindow):
 
 
         self.setCentralWidget(self.centralWidget)
+    def delete_all_widgets(self):
+        for widget in self.centralWidget.findChildren(QWidget):
+            widget.deleteLater()
     def load(self, names_elements):
-        #make form layout
+        # first delete all widgets then load them again
+        self.name_elements = names_elements
+        self.delete_all_widgets()
+
         elements_implemented = ", ".join(names_elements)
         self.label_add_compound = QtWidgets.QLabel(f"Add compound (elements implemented: {elements_implemented}): ")
         self.add_compound_input = QtWidgets.QLineEdit()
@@ -209,34 +213,38 @@ class AddnewElement(QtWidgets.QMainWindow):
         self.centralLayout.addWidget(self.add_compound_input)
 
         self.centralLayout.addLayout(self.show_mass_layout)
-        self.showcompound_label = QtWidgets.QLabel("Mass:")
-        self.showmass_label = QtWidgets.QLabel()
-        self.show_mass_layout.addWidget(self.showcompound_label)
+        self.showmass_label = QtWidgets.QLabel("Mass:")
+        self.showcompound_label = QtWidgets.QLabel("Compound:")
         self.show_mass_layout.addWidget(self.showmass_label)
+        self.show_mass_layout.addWidget(self.showcompound_label)
 
 
-        collectbutton = QtWidgets.QPushButton("Add Element")
+        collectbutton = QtWidgets.QPushButton("Add Compound")
         collectbutton.clicked.connect(lambda: self.add_compound(self.add_compound_input.text()))
         self.centralLayout.addWidget(collectbutton)
         closebutton = QtWidgets.QPushButton("Close")
         closebutton.clicked.connect(self.closeWindow)
         self.centralLayout.addWidget(closebutton)
+
     def add_compound(self,compoundstring):
         mass, compound = mo.get_element_numbers_out_of_names(compoundstring)
         self.parent.jump_to_mass(float(mass))
         if not (self.parent.ml.suggestions.element_numbers == compound).all(axis=1).any():
             self.parent.ml.add_suggestion_to_sugglist(self.parent, compound)
-        self.showmass_label.setText(f"{round(mass,4)}")
+        self.showmass_label.setText(f"Mass: {round(mass,4)}")
+        name_compound = dict(zip(self.name_elements, compound))
+        name_compound = ', '.join([f'{key}={value}' for key, value in name_compound.items()])
+        self.showcompound_label.setText(f"Compound: {name_compound}")
 
-    def addElement(self):
-        compoundarray = [0]*len(self.parent.ml.names_elements)
-        for index, compound in enumerate(self.compound_inquiry):
-            if self.compound_inquiry[compound].text() == '':
-                compoundarray[index] = 0
-            else:
-                compoundarray[index] = int(self.compound_inquiry[compound].text())
-        compoundarray = np.array(compoundarray)
-        self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
+    # def addElement(self):
+    #     compoundarray = [0]*len(self.parent.ml.names_elements)
+    #     for index, compound in enumerate(self.compound_inquiry):
+    #         if self.compound_inquiry[compound].text() == '':
+    #             compoundarray[index] = 0
+    #         else:
+    #             compoundarray[index] = int(self.compound_inquiry[compound].text())
+    #     compoundarray = np.array(compoundarray)
+    #     self.parent.ml.add_suggestion_to_sugglist(self.parent, compoundarray)
 
     def closeWindow(self):
         self.close()
@@ -302,6 +310,11 @@ class Show_total_Masslist(QtWidgets.QMainWindow):
 
     def closeWindow(self):
         self.close()
+
+    def show(self,ml):
+        self.load(ml)
+        super().show()
+
 
 class RegExpValidator(QtGui.QValidator):
     def __init__(self, parent=None):
@@ -421,8 +434,7 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
         self.parent.ml.reinit_suggestions()
         xlims, ylims = self.parent.vb.viewRange()
         pyqtgraph_objects.redraw_vlines(self.parent, self.parent.graphWidget, xlims)
-        print("change the input ranges to")
-        print(self.parent.ml.mass_suggestions_numbers)
+        print(f"change the input ranges to: {self.parent.ml.mass_suggestions_numbers}")
         print("suggestions", self.parent.ml.suggestions.masses, self.parent.ml.suggestions.masses.shape)
         co = Config()
         co.save_to_config("ranges", "lastrangesettings", mass_suggestions_numbers)
@@ -454,11 +466,6 @@ class SelectMassRangeWindow(QtWidgets.QMainWindow):
             return string
 
 
-class Show_suggestions(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
-        super(AddnewElement, self).__init__(parent)
-        self.centralWidget = QtWidgets.QWidget(self)
-        self.centralLayout = QtWidgets.QVBoxLayout(self.centralWidget)
 
 class PlotSettingsWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -650,8 +657,6 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.sorting_layout = QtWidgets.QHBoxLayout()
 
 
-        # list of masses
-        self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
         regex = QRegExp(r'^-?\d+(-\d+)?$')
         # Create a validator based on the regular expression
         self.multiple_check = QtWidgets.QLineEdit()
@@ -685,12 +690,19 @@ class Masslist_Frame(QtWidgets.QFrame):
         self.sort_primary_ions = to.Sorting(self, self.sorting_layout, self.sort_on_primary, "Primary Ions")
 
 
+        # list of masses
+        self.masslist_widget = to.QlistWidget_Masslist(self,[],[])
+
+
         self.layout.addLayout(self.jump_to_mass_layout)
         self.layout.addLayout(self.jump_to_compound_layout)
         self.layout.addLayout(self.multiple_check_layout)
         self.layout.addLayout(self.sorting_layout)
         self.layout.addWidget(self.masslist_widget)
 
+
+
+    ###### sorting algorithms
     def sort_on_primary(self, masses):
         primary_ions = to.Traces.Primary_ions
         mask = np.any((np.isclose(masses[:, None], primary_ions, rtol=1e-5, atol=1e-8)), axis=1)

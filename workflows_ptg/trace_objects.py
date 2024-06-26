@@ -194,13 +194,13 @@ class Traces():
                                 ds = f["StickCps"]
                                 self.bg_corr_status = False
                                 self.hightimeres_status = True
-                                output_text = "Loaded hightimres bg not corr Traces"
+                                output_text = "trace_objects.Traces: Loaded hightimres bg not corr Traces"
                             except:
-                                print("Could not load hightimres bg not corr, is the file corrupt?\nTry loading average...")
+                                print("trace_objects.Traces: Could not load hightimres bg not corr, is the file corrupt?\nTry loading average...")
                                 self.hightimeres = False
 
                         else:
-                            print("No hightimres bg not corr available, is this a average only file? \nTry loading average...")
+                            print("trace_objects.Traces: No hightimres bg not corr available, is this a average only file? \nTry loading average...")
                         self.hightimeres = False
 
                     else:
@@ -210,7 +210,7 @@ class Traces():
                         self.hightimeres_status = True
                         load_traces =False
             if not self.hightimeres:
-                print("Loading Average Traces")
+                print("trace_objects.Traces: Loading Average Traces")
                 if self.bg_corr:
                     if "CorrAvgStickCps" in f:
                         try:
@@ -258,7 +258,7 @@ class Traces():
                     interpolated_traces = self.interpolate(Traces, self.interpolation_s)
                     Traces  = interpolated_traces
                     self.hightimeresTraces = Traces
-            print(f"{output_text}, give error = {give_error}")
+            print(f"trace_objects.Traces: {output_text}, give error = {give_error}")
             return Traces, output_text, give_error
     def update_Traces(self, massesToLoad = "none"):
         self.Traces,outputtext,error = self.load_Traces(massesToLoad)
@@ -292,6 +292,33 @@ class QlistWidget_Masslist(QListWidget):
         self.load_on_tick = True
         self.fixedMasses = np.array([])
         self.fixedcompositions = np.zeros((0, 8))
+        self.last_selected_index = -1
+        # self.setSelectionMode(QListWidget.MultiSelection)
+
+    ### selection functionality
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         modifiers = QApplication.keyboardModifiers()
+    #         current_row = self.indexAt(event.pos()).row()
+    #
+    #         if current_row == -1:
+    #             return
+    #
+    #         if modifiers == Qt.ShiftModifier and self.last_selected_index != -1:
+    #             self.clearSelection()
+    #             start = min(self.last_selected_index, current_row)
+    #             end = max(self.last_selected_index, current_row)
+    #             for row in range(start, end + 1):
+    #                 self.item(row).setSelected(True)
+    #         else:
+    #             if modifiers != Qt.ControlModifier:
+    #                 self.clearSelection()
+    #             self.item(current_row).setSelected(True)
+    #             self.last_selected_index = current_row
+    #
+    #     super().mousePressEvent(event)
+
+
 
 
     def mousePressEvent(self, event):
@@ -322,9 +349,9 @@ class QlistWidget_Masslist(QListWidget):
             # item.setFlags(item.flags() | 1)  # Add the Qt.ItemIsUserCheckable flag
             # item.setCheckState(0)  # 0 for Unchecked, 2 for Checked
             self.addItem(item)
-        print("redid")
     def jump_to_mass(self, event, parent):
         borders = event.split("-")
+        print(borders)
         if len(borders) == 1:
             mass = float(event)
             mass_difference = np.abs(self.masses - mass)
@@ -478,7 +505,7 @@ class QlistWidget_Selected_Masses(QListWidget):
                 # print(lower_index,upper_index)
                 new_masses = parent.masslist_frame.masslist_widget.masses[lower_index:upper_index]
                 new_compositions = parent.masslist_frame.masslist_widget.compositions[lower_index:upper_index]
-                print(f"new mass {new_masses}, {new_compositions}")
+                print(f"Add Mass to selceted Masses: {new_masses}, {new_compositions}")
                 for new_mass,new_composition in zip(new_masses,new_compositions):
                     if new_mass not in self.selectedmasses:
                         self.selectedmasses = np.append(self.selectedmasses, new_mass)
@@ -489,7 +516,7 @@ class QlistWidget_Selected_Masses(QListWidget):
                 parent.update_plots()
 
     def add_compound(self,text,parent):
-        mass = 0
+        mass,elementnumber = 0,[]
         if text in masslist_library.masslibrary:
             mass, elementnumber = masslist_library.masslibrary[text]
             elementnumber = elementnumber[0:8]
@@ -500,6 +527,7 @@ class QlistWidget_Selected_Masses(QListWidget):
             if match:
                 mass, elementnumber = mo.get_element_numbers_out_of_names(text)
                 elementnumber = elementnumber[0:8]
+        print(f"I try to access the mass: {mass}, {elementnumber}")
         if mass in parent.masslist_frame.masslist_widget.masses:
             # second test whether we have it in masslist
             self.add_one_mass(mass, np.array(elementnumber), parent)
@@ -510,7 +538,6 @@ class QlistWidget_Selected_Masses(QListWidget):
     def add_item_to_selected_masses(self,item,button,parent):
         if button == 1:#left click
             row = int(parent.masslist_frame.masslist_widget.row(item))
-            print(f"index {row}")
             massclickedon = parent.masslist_frame.masslist_widget.masses[row]
             compositionclickedon = parent.masslist_frame.masslist_widget.compositions[row, :]
             self.add_one_mass(massclickedon,compositionclickedon,parent)
@@ -529,7 +556,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         '''
         default_widow = 0.05
 
-        print(f"new mass {mass}, {composition}")
+        print(f"Add mass to Selected Masses {mass}, {composition}")
         if mass not in self.selectedmasses:
             self.selectedmasses = np.append(self.selectedmasses, mass)
             self.selectedcompositions = np.append(self.selectedcompositions, [composition], axis=0)
@@ -540,9 +567,7 @@ class QlistWidget_Selected_Masses(QListWidget):
         # update the current peak
         parent.plot_peak_frame.graph_peak_Widget.removeItem(self.highlight_this_mass_vline)
         self.highlight_this_mass_vline = []
-        print(f"Right click update peak plot for mass {mass}")
         color_this_mass = self.defaultcolorcycle[np.where(self.selectedmasses == mass)[0][0]]
-        print(color_this_mass)
         parent.plot_peak_frame.peakmasscolor.set_color(color_this_mass)
         parent.plot_peak_frame.peakmasslabel.setText(str(round(mass,6)))
         xlims = (mass-default_widow,mass+default_widow)

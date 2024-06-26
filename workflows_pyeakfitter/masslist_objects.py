@@ -676,7 +676,6 @@ class Spectrum():
 
 
 
-
 def get_names_out_of_element_numbers(compound_array):
     # only if any compounds are in compound array give a string
     '''Get the compound name out of a compound array
@@ -696,25 +695,30 @@ def get_names_out_of_element_numbers(compound_array):
     '''
 
     compoundname_list = []
+    names_elements = Mass_iso_sugglist.names_elements
+    # modify the input array
+    single_compound = False
+    if len(compound_array.shape) == 1:
+        single_compound = True
+        compound_array = compound_array.reshape(1, compound_array.shape[0])
     compound_array_copy = compound_array.copy()
-    for compound in compound_array_copy:
-        if compound_array.shape[0] < 9:
-            # if we still donot have iodine etc teak the reduce neme list
-            names_elements = ["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S"]
-            order_of_letters = [0, 1, 2, 4, 5, 6, 7, 3]
-        else:
-            order_of_letters = Mass_iso_sugglist.order_of_letters
-            names_elements = Mass_iso_sugglist.names_elements
-        if len(compound_array.shape) == 1:
-            compound = compound_array_copy
-        if np.any(compound):
 
+    if compound_array_copy.shape[1] < 9:
+        # if we still donot have iodine etc take the reduce name list
+        names_elements = np.array(["C", "C(13)", "H", "H+", "N", "O", "O(18)", "S"])
+        order_of_letters = [0, 1, 2, 4, 5, 6, 7, 3]
+    else:
+        order_of_letters = Mass_iso_sugglist.order_of_letters
+        names_elements = np.array(Mass_iso_sugglist.names_elements)
+
+    for compound in compound_array_copy:
+        if np.any(compound):
             compoundletters = ""
             including_NH4 = False
-            if compound[2] >= 3 and compound[4] >= 1:
+            if compound[names_elements == "H"].item() >= 3 and compound[names_elements == "N"].item() >= 1 and compound[names_elements == "H+"].item() == 1:
                 including_NH4 = True
-                compound[2] = compound[2]-3
-                compound[4] = compound[4]-1
+                compound[names_elements == "H"] = compound[names_elements == "H"].item()-3
+                compound[names_elements == "N"] = compound[names_elements == "N"].item()-1
             for index, order in enumerate(order_of_letters):
                 # before the last letter (H+) add a " "
                 if index == len(order_of_letters)-1:
@@ -729,29 +733,15 @@ def get_names_out_of_element_numbers(compound_array):
                 if compound[order] > 1:
                     compoundletters += names_elements[order] + str(round(compound[order]))
             compoundname_list.append(compoundletters)
-            if len(compound_array.shape) == 1:
+            if single_compound:
                 return compoundletters
         else:
-            if len(compound_array.shape) == 1:
+            if single_compound:
                 return ""
             compoundname_list.append("")
 
     return compoundname_list
 
-def sort_on_isotope(list):
-    """
-
-    Parameters
-    ----------
-    list of element names e.g. ["C",C(13)"]
-
-    Returns
-    -------
-    list with non isotope names, list with isotope names
-    """
-    isotopes = [element for element in list if any(char.isdigit() for char in element)]
-    non_isotopes = [element for element in list if not any(char.isdigit() for char in element)]
-    return  non_isotopes, isotopes
 
 def get_element_numbers_out_of_names(namestring):
     '''Get the compound name out of a compound array
